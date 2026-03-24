@@ -1997,6 +1997,7 @@ let S = (() => {
       s.cats       = s.cats       || null;
       s.acoes      = s.acoes      || [];
       s.realizado  = s.realizado  || [];
+      s.ccs        = s.ccs        || [];
       return s;
     }
     // 2. Fall back to embedded appState (imported HTML backup)
@@ -2007,10 +2008,11 @@ let S = (() => {
       s.cats       = s.cats       || null;
       s.acoes      = s.acoes      || [];
       s.realizado  = s.realizado  || [];
+      s.ccs        = s.ccs        || [];
       return s;
     }
   } catch(e) {}
-  return {receitas:[],despesas:[],aplicacoes:[],cats:null,acoes:[],realizado:[]};
+  return {receitas:[],despesas:[],aplicacoes:[],cats:null,acoes:[],realizado:[],ccs:[]};
 })();
 
 // Merge saved custom cats over defaults
@@ -4938,6 +4940,7 @@ function salvarCC() {
   const cor   = document.getElementById('cc-cor').value;
   const desc  = document.getElementById('cc-desc').value.trim();
   if (!nome) return alert('Informe um nome para o centro de custo.');
+  if (!S.ccs) S.ccs = [];
   const obj = {nome, emoji, cor, desc};
   if (editingId) {
     const i = S.ccs.findIndex(c=>c.id===editingId);
