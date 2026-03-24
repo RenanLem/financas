@@ -507,7 +507,11 @@
     </div>
   </nav>
   <div class="sidebar-footer">
-    <button class="btn-save-html" id="btnSave" onclick="saveHTML()">💾 Salvar Arquivo</button>
+    <div style="display:flex;align-items:center;gap:6px;padding:6px 4px 2px;font-size:11px;color:#4ade80;font-family:'DM Mono',monospace;letter-spacing:.5px;">
+      <span style="width:7px;height:7px;border-radius:50%;background:#4ade80;display:inline-block;flex-shrink:0;box-shadow:0 0 6px #4ade80;"></span>
+      Salvamento automático ativo
+    </div>
+    <button class="btn-save-html" id="btnSave" onclick="saveHTML()">📤 Exportar Backup</button>
     <button class="btn-export-pdf" onclick="openPdfModal()">📄 Exportar PDF</button>
     <button class="btn-export-xlsx" onclick="exportXLSX()">📊 Exportar Excel</button>
     <button class="btn-import" onclick="triggerImport()">📥 Importar HTML</button>
@@ -521,7 +525,7 @@
 
 <!-- MOBILE ACTION BAR (visible on small screens) -->
 <div class="mobile-action-bar" id="mobileActionBar">
-  <button class="btn" onclick="saveHTML()" style="color:var(--green);border-color:rgba(74,222,128,.3);">💾 Salvar</button>
+  <button class="btn" onclick="saveHTML()" style="color:var(--green);border-color:rgba(74,222,128,.3);">📤 Backup</button>
   <button class="btn" onclick="openPdfModal()" style="color:var(--red);border-color:rgba(248,113,113,.3);">📄 PDF</button>
   <button class="btn" onclick="exportXLSX()" style="color:var(--accent3);border-color:rgba(96,165,250,.3);">📊 Excel</button>
   <button class="btn" onclick="triggerImport()" style="color:var(--gold);border-color:rgba(251,191,36,.3);">📥 Importar</button>
@@ -828,7 +832,7 @@
           <div class="ajuda-hero-icon">💰</div>
           <div>
             <div class="ajuda-hero-title">Bem-vindo ao FluxoCaixa!</div>
-            <div class="ajuda-hero-sub">Seu controle financeiro pessoal — tudo em um único arquivo que você salva no computador ou celular. Nenhum dado vai para a internet. É só seu! 🔒</div>
+            <div class="ajuda-hero-sub">Seu controle financeiro pessoal — os dados são salvos <strong>automaticamente</strong> no seu navegador. Nenhum dado vai para a internet. É só seu! 🔒<br><span style="color:#4ade80;">● Salvamento automático ativo — não precisa clicar em nada para salvar.</span></div>
           </div>
         </div>
 
@@ -852,10 +856,10 @@
         <!-- ── SALVAR ── -->
         <div class="ajuda-section" id="ajuda-salvar">
           <div class="ajuda-section-header">
-            <span class="ajuda-section-icon">💾</span>
+            <span class="ajuda-section-icon">✅</span>
             <div>
-              <div class="ajuda-section-title">Como salvar seu trabalho</div>
-              <div class="ajuda-section-sub">MUITO IMPORTANTE — faça isso sempre que terminar de lançar dados</div>
+              <div class="ajuda-section-title">Salvamento automático</div>
+              <div class="ajuda-section-sub">Os dados são salvos automaticamente — sem precisar clicar em nada</div>
             </div>
           </div>
           <div class="ajuda-alert warning">⚠️ <strong>Atenção:</strong> este app não salva automaticamente! Se você fechar a aba sem salvar, vai perder tudo que digitou. Salve sempre!</div>
@@ -1879,28 +1883,37 @@ let dashChart   = null;
 
 let S = (() => {
   try {
+    // 1. Try localStorage first (auto-saved data)
+    const ls = localStorage.getItem('fluxocaixa_data');
+    if (ls) {
+      const s = JSON.parse(ls);
+      s.aplicacoes = s.aplicacoes || [];
+      s.cats       = s.cats       || null;
+      s.acoes      = s.acoes      || [];
+      s.realizado  = s.realizado  || [];
+      return s;
+    }
+    // 2. Fall back to embedded appState (imported HTML backup)
     const raw = document.getElementById('appState').textContent.trim();
-    const s = JSON.parse(raw);
-    s.aplicacoes = s.aplicacoes || [];
-    s.cats = s.cats || null;
-    s.acoes = s.acoes || [];
-    s.realizado = s.realizado || [];
-    return s;
-  } catch(e) { return {receitas:[],despesas:[],aplicacoes:[],cats:null}; }
+    if (raw && raw !== '{}') {
+      const s = JSON.parse(raw);
+      s.aplicacoes = s.aplicacoes || [];
+      s.cats       = s.cats       || null;
+      s.acoes      = s.acoes      || [];
+      s.realizado  = s.realizado  || [];
+      return s;
+    }
+  } catch(e) {}
+  return {receitas:[],despesas:[],aplicacoes:[],cats:null,acoes:[],realizado:[]};
 })();
 
 // Merge saved custom cats over defaults
-// If user has saved custom cats, use them as-is (no merge with defaults).
-// null means "never customized" → use defaults.
 if (S.cats && typeof S.cats === 'object' && Object.keys(S.cats).length > 0) {
   CATS = {...S.cats};
 }
 
 function persist() {
-  // Always save the full current CATS state so user customizations
-  // (including deletions) are never lost on reload.
-  // null means "use defaults" — we only set null when CATS is identical
-  // to CATS_DEFAULT in both keys AND values, which we check explicitly.
+  // Compute cats delta
   const defaultKeys = Object.keys(CATS_DEFAULT).sort().join(',');
   const currentKeys = Object.keys(CATS).sort().join(',');
   let identical = defaultKeys === currentKeys;
@@ -1913,25 +1926,30 @@ function persist() {
     }
   }
   S.cats = identical ? null : {...CATS};
-  document.getElementById('appState').textContent = JSON.stringify(S);
+
+  // Auto-save to localStorage
+  try {
+    localStorage.setItem('fluxocaixa_data', JSON.stringify(S));
+  } catch(e) {
+    console.warn('localStorage indisponível, usando fallback HTML', e);
+    document.getElementById('appState').textContent = JSON.stringify(S);
+  }
 }
 
 function uid() { return Date.now().toString(36)+Math.random().toString(36).slice(2); }
 
-// ── SAVE HTML ──────────────────────────────────────────────────────────────
+// ── EXPORT BACKUP HTML ─────────────────────────────────────────────────────
 function saveHTML() {
-  persist();
+  // Embed current data into appState for the exported file
+  document.getElementById('appState').textContent = JSON.stringify(S);
   const html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
   const a = Object.assign(document.createElement('a'), {
     href: URL.createObjectURL(new Blob([html],{type:'text/html;charset=utf-8'})),
-    download: 'financas_' + new Date().toISOString().slice(0,10) + '.html'
+    download: 'financas_backup_' + new Date().toISOString().slice(0,10) + '.html'
   });
   a.click();
   URL.revokeObjectURL(a.href);
-  const btn = document.getElementById('btnSave');
-  btn.classList.add('save-flash');
-  setTimeout(() => btn.classList.remove('save-flash'), 700);
-  toast('✓ Arquivo salvo com sucesso!');
+  toast('✓ Backup exportado!');
 }
 
 function toast(msg) {
@@ -4701,6 +4719,9 @@ const _nowMes = `${_now.getFullYear()}-${String(_now.getMonth()+1).padStart(2,'0
 document.getElementById('saldoInicialMes').value = mk(_now.getFullYear(), _now.getMonth());
 document.getElementById('realMes').value = _nowMes;
 refreshAll();
+if (localStorage.getItem('fluxocaixa_data')) {
+  setTimeout(() => toast('✅ Dados carregados automaticamente'), 600);
+}
 </script>
 </body>
 </html>
