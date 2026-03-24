@@ -408,6 +408,7 @@
     .content{padding:14px 14px 80px;}
     .topbar{padding:0 14px;height:56px;flex-wrap:wrap;min-height:56px;padding-top:env(safe-area-inset-top);height:calc(56px + env(safe-area-inset-top));}
     .hamburger{display:flex!important;min-width:52px;min-height:52px;font-size:24px;padding:12px 16px;}
+    .fab-menu{display:flex!important;}
     .period-controls{gap:6px;flex-wrap:wrap;}
     /* Bottom action bar on mobile */
     .sidebar-footer{display:none;}
@@ -441,6 +442,31 @@
   .hamburger{display:none;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);cursor:pointer;font-size:22px;align-items:center;min-width:48px;min-height:48px;justify-content:center;-webkit-tap-highlight-color:transparent;}
   .overlay-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:90;}
   .overlay-bg.open{display:block;}
+
+  /* FAB menu button — only on mobile */
+  .fab-menu{
+    display:none;
+    position:fixed;
+    /* top: safe area + 12px extra padding — fallback 72px for Dynamic Island */
+    top:72px;
+    top:calc(env(safe-area-inset-top, 60px) + 12px);
+    left:14px;
+    z-index:200;
+    width:52px;
+    height:52px;
+    border-radius:14px;
+    background:var(--surface);
+    border:1.5px solid var(--border);
+    color:var(--text);
+    font-size:22px;
+    cursor:pointer;
+    align-items:center;
+    justify-content:center;
+    box-shadow:0 4px 16px rgba(0,0,0,.4);
+    -webkit-tap-highlight-color:transparent;
+    transition:opacity .2s;
+  }
+  .fab-menu.hidden{opacity:0;pointer-events:none;}
 
   /* MOBILE ACTION BAR */
   .mobile-action-bar{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);padding:8px 12px;z-index:150;gap:8px;flex-wrap:wrap;justify-content:center;}
@@ -490,6 +516,9 @@
 </aside>
 <div class="overlay-bg" id="overlayBg" onclick="closeSidebar()"></div>
 
+<!-- FAB menu button — fixed, always below safe area on iOS -->
+<button class="fab-menu" id="fabMenu" onclick="toggleSidebar()">☰</button>
+
 <!-- MOBILE ACTION BAR (visible on small screens) -->
 <div class="mobile-action-bar" id="mobileActionBar">
   <button class="btn" onclick="saveHTML()" style="color:var(--green);border-color:rgba(74,222,128,.3);">💾 Salvar</button>
@@ -503,7 +532,7 @@
 <main class="main">
   <div class="topbar">
     <div class="topbar-left">
-      <button class="hamburger" onclick="toggleSidebar()">☰</button>
+      <button class="hamburger" onclick="toggleSidebar()" style="visibility:hidden;pointer-events:none;">☰</button>
       <div class="page-title" id="pageTitle">Dashboard</div>
     </div>
     <div class="period-controls">
@@ -1991,8 +2020,19 @@ function saldoInicialMes() {
   const [y,m] = v.split('-').map(Number);
   return {y, m:m-1};
 }
-function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); document.getElementById('overlayBg').classList.toggle('open'); }
-function closeSidebar()  { document.getElementById('sidebar').classList.remove('open');  document.getElementById('overlayBg').classList.remove('open');  }
+function toggleSidebar() {
+  const open = document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('overlayBg').classList.toggle('open');
+  const fab = document.getElementById('fabMenu');
+  if (fab) fab.classList.toggle('hidden', open);
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('overlayBg').classList.remove('open');
+  const fab = document.getElementById('fabMenu');
+  if (fab) fab.classList.remove('hidden');
+}
+// closeSidebar defined above
 
 // ── IR CALC ────────────────────────────────────────────────────────────────
 // Tabela regressiva padrão (CDB, Tesouro, Fundos LP etc.)
