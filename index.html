@@ -507,7 +507,8 @@
     <div class="nav-section">
       <div class="nav-label">Visão Geral</div>
       <div class="nav-item active" data-page="dashboard" onclick="navigate('dashboard')"><span class="nav-dot"></span> Dashboard</div>
-      <div class="nav-item" data-page="fluxo" onclick="navigate('fluxo')"><span class="nav-dot"></span> Fluxo de Caixa</div>
+      <div class="nav-item" data-page="fluxo-orc" onclick="navigate('fluxo-orc')"><span class="nav-dot"></span> 📋 Fluxo Orçado</div>
+      <div class="nav-item" data-page="fluxo-real" onclick="navigate('fluxo-real')"><span class="nav-dot"></span> ✅ Fluxo Realizado</div>
       <div class="nav-item" data-page="realizado" onclick="navigate('realizado')"><span class="nav-dot"></span> ✅ Realizado</div>
     </div>
     <div class="nav-section">
@@ -635,21 +636,36 @@
     </div>
 
     <!-- FLUXO -->
-    <div class="page" id="page-fluxo">
+    <!-- FLUXO ORÇADO -->
+    <div class="page" id="page-fluxo-orc">
       <div class="print-header" id="printHeaderFluxo">
-        <div class="print-header-title">FluxoCaixa — Fluxo de Caixa</div>
+        <div class="print-header-title">FluxoCaixa — Fluxo Orçado</div>
         <div class="print-header-meta" id="printHeaderFluxoMeta"></div>
       </div>
       <div class="section">
         <div class="section-header">
-          <div class="section-title">Fluxo de Caixa <small id="fluxo-year-label"></small></div>
+          <div class="section-title">📋 Fluxo Orçado <small id="fluxo-orc-year-label"></small></div>
           <div class="btn-group" style="display:flex;gap:6px;flex-wrap:wrap;">
             <button class="btn sm" onclick="openPdfModal()">📄 PDF</button>
             <button class="btn sm" onclick="exportXLSX()">📊 Excel</button>
             <button class="btn sm" onclick="exportCSV()">⬇ CSV</button>
           </div>
         </div>
-        <div class="cf-table-wrap"><table class="cf-table"><thead id="cfHead"></thead><tbody id="cfBody"></tbody></table></div>
+        <div class="cf-table-wrap"><table class="cf-table"><thead id="cfHeadOrc"></thead><tbody id="cfBodyOrc"></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- FLUXO REALIZADO -->
+    <div class="page" id="page-fluxo-real">
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">✅ Fluxo Realizado <small id="fluxo-real-year-label"></small></div>
+          <div class="btn-group" style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button class="btn sm" onclick="openPdfModal()">📄 PDF</button>
+            <button class="btn sm" onclick="exportXLSX()">📊 Excel</button>
+          </div>
+        </div>
+        <div class="cf-table-wrap"><table class="cf-table"><thead id="cfHeadReal"></thead><tbody id="cfBodyReal"></tbody></table></div>
       </div>
     </div>
 
@@ -2068,7 +2084,7 @@ function toast(msg) {
 }
 
 // ── NAVIGATION ──────────────────────────────────────────────────────────────
-const PAGE_TITLES = {dashboard:'Dashboard',fluxo:'Fluxo de Caixa',ccs:'🏢 Centros de Custo',realizado:'✅ Realizado vs Orçado',receitas:'Receitas',despesas:'Despesas',aplicacoes:'Aplicações Financeiras',b3:'📈 Carteira B3',config:'⚙ Configurações',ajuda:'❓ Instruções'};
+const PAGE_TITLES = {dashboard:'Dashboard','fluxo-orc':'📋 Fluxo Orçado','fluxo-real':'✅ Fluxo Realizado',ccs:'🏢 Centros de Custo',realizado:'✅ Realizado vs Orçado',receitas:'Receitas',despesas:'Despesas',aplicacoes:'Aplicações Financeiras',b3:'📈 Carteira B3',config:'⚙ Configurações',ajuda:'❓ Instruções'};
 
 function navigate(page) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -2083,6 +2099,8 @@ function navigate(page) {
   else if (page === 'config') renderConfig();
   else if (page === 'b3') renderB3();
   else if (page === 'realizado') renderRealizado();
+  else if (page === 'fluxo-orc') { renderFluxoOrc(); }
+  else if (page === 'fluxo-real') { renderFluxoReal(); }
   else refreshAll();
 }
 
@@ -2510,6 +2528,41 @@ function excluir(tipo, id) {
 // ── CALC ENGINE ────────────────────────────────────────────────────────────
 function mk(y,m) { return `${y}-${String(m+1).padStart(2,'0')}`; }
 
+function toggleReajuste() {
+  const on = document.getElementById('d-reaj-on').checked;
+  document.getElementById('d-reaj-fields').style.display = on ? 'block' : 'none';
+  if (on) updateReajPreview();
+}
+
+function updateReajPreview() {
+  const base  = gF('d-valor') || 0;
+  const taxa  = gF('d-reaj-taxa') || 0;
+  const tipo  = gV('d-reaj-tipo');
+  const el    = document.getElementById('d-reaj-preview');
+  if (!base || !taxa) { el.textContent = ''; return; }
+  const preview = [];
+  for (let i = 0; i < 4; i++) {
+    const v = valorComReajuste(base, taxa, tipo, i);
+    preview.push(`Mês +${i}: ${fmt(v)}`);
+  }
+  preview.push('...');
+  el.textContent = preview.join('  ·  ');
+}
+
+function valorComReajuste(base, taxa, tipo, diff) {
+  if (!taxa || diff === 0) return base;
+  if (tipo === 'composto') return base * Math.pow(1 + taxa / 100, diff);
+  if (tipo === 'simples')  return base * (1 + (taxa / 100) * diff);
+  if (tipo === 'fixo')     return base + taxa * diff;
+  return base;
+}
+
+function desValor(d, diff) {
+  const base = d.freq === 'parcelado' ? (d.vpar || d.valor / d.npar) : d.valor;
+  if (!d.reajTaxa || d.reajTaxa === 0) return base;
+  return valorComReajuste(base, d.reajTaxa, d.reajTipo || 'composto', diff);
+}
+
 // CC fraction: what portion of item belongs to ccId filter
 function ccFrac(item, ccId) {
   if (!ccId || ccId === 'all') return 1;
@@ -2662,15 +2715,17 @@ function pct(p) { return (p*100).toFixed(1)+'%'; }
 function refreshAll() {
   // sync period label everywhere
   const lbl = periodLabel();
-  const el = document.getElementById('fluxo-year-label');
+  const el = document.getElementById('fluxo-orc-year-label');
   if (el) el.textContent = lbl;
+  const el2 = document.getElementById('fluxo-real-year-label');
+  if (el2) el2.textContent = lbl;
   const phd = document.getElementById('printHeaderDashMeta');
   if (phd) phd.textContent = `Período: ${lbl}  |  Gerado em: ${new Date().toLocaleDateString('pt-BR')}`;
   const phf = document.getElementById('printHeaderFluxoMeta');
   if (phf) phf.textContent = `Período: ${lbl}  |  Gerado em: ${new Date().toLocaleDateString('pt-BR')}`;
 
   renderKPIs(); renderChart(); renderCats(); renderAplResumo();
-  renderFluxo(); renderReceitas(); renderDespesas(); renderAplicacoes();
+  renderFluxoOrc(); renderFluxoReal(); renderReceitas(); renderDespesas(); renderAplicacoes();
   buildCCFilter();
 }
 
@@ -2987,165 +3042,223 @@ function renderDespesas() {
   }).join('');
 }
 
-function renderFluxo() {
-  const head = document.getElementById('cfHead');
-  const body = document.getElementById('cfBody');
+// ── FLUXO ORÇADO ───────────────────────────────────────────────────────────
+function renderFluxoOrc() {
+  const head = document.getElementById('cfHeadOrc');
+  const body = document.getElementById('cfBodyOrc');
   if (!head || !body) return;
   const months = periodMonths();
-  const nCols  = months.length;
-  const cc     = currentCC;
+  const cc = currentCC;
+  const lbl = periodLabel();
+  const el = document.getElementById('fluxo-orc-year-label');
+  if (el) el.textContent = lbl;
 
   const colLabels = months.map(({y,m}) => {
-    if (periodMode==='anual' || nCols<=12) return MESES[m];
-    if (nCols<=36) return `${MESES[m]}/${String(y).slice(2)}`;
+    const n = months.length;
+    if (periodMode==='anual'||n<=12) return MESES[m];
+    if (n<=36) return `${MESES[m]}/${String(y).slice(2)}`;
     return `${String(m+1).padStart(2,'0')}/${String(y).slice(2)}`;
   });
-
-  // Header: each month gets 3 cols (Orç | Real | Dif) + label + totais
-  let headHtml = '<tr><th rowspan="2" style="min-width:140px;">Categoria</th>';
-  headHtml += colLabels.map(l=>`<th colspan="3" style="text-align:center;border-left:1px solid var(--border);">${l}</th>`).join('');
-  headHtml += '<th colspan="3" style="text-align:center;border-left:2px solid var(--accent3);">Total Período</th></tr>';
-  headHtml += '<tr>' + colLabels.map(()=>`<th class="cf-sub orcado">Orç</th><th class="cf-sub realizado">Real</th><th class="cf-sub dif">Dif</th>`).join('') +
-              '<th class="cf-sub orcado">Orç</th><th class="cf-sub realizado">Real</th><th class="cf-sub dif">Dif</th></tr>';
-  head.innerHTML = headHtml;
+  const nCols = months.length;
+  head.innerHTML = '<tr><th style="min-width:140px;">Categoria</th>'+colLabels.map(l=>`<th>${l}</th>`).join('')+'<th>Total</th></tr>';
 
   const si    = saldoInicial();
   const siMes = saldoInicialMes();
   const rows  = [];
 
-  function rowCells(orcVals, realVals) {
-    let orcTotal=0, realTotal=0;
-    let cells = '';
-    for (let i=0; i<months.length; i++) {
-      const o = orcVals[i]||0, r = realVals ? (realVals[i]||0) : null;
-      const hasReal = realVals !== null;
-      const dif = hasReal ? (r - o) : null;
-      orcTotal += o; if(hasReal) realTotal += r;
-      cells += cellFmt(o,'orcado') + (hasReal ? cellFmt(r,'realizado') : '<td class="cf-sub zero">—</td>') +
-               (dif!==null ? cellFmt(dif,'dif',true) : '<td class="cf-sub zero">—</td>');
-    }
-    const difTotal = realVals ? (realTotal - orcTotal) : null;
-    cells += cellFmt(orcTotal,'orcado') + (realVals ? cellFmt(realTotal,'realizado') : '<td class="zero">—</td>') +
-             (difTotal!==null ? cellFmt(difTotal,'dif',true) : '<td class="zero">—</td>');
-    return cells;
+  function cell(v, cls) {
+    if (!v || Math.abs(v)<0.01) return '<td class="zero">—</td>';
+    return `<td class="${cls}">${fmtS(v)}</td>`;
+  }
+  function row(label, vals, cls, total) {
+    const tot = total !== undefined ? total : vals.reduce((a,b)=>a+(b||0),0);
+    const totCls = cls==='pos'?'pos':cls==='neg'?'neg':(tot>=0?'pos':'neg');
+    return `<tr class="${cls==='total'?'total':cls==='saldo'?'saldo-row':''}"><td>${label}</td>${vals.map(v=>cell(v,cls==='pos'?'pos':cls==='neg'?'neg':(v>=0?'pos':'neg'))).join('')}${cell(tot,totCls)}</tr>`;
+  }
+  function section(label, color) {
+    return `<tr><td colspan="${nCols+2}" style="padding:12px 12px 5px;font-size:10px;letter-spacing:2px;font-family:'DM Mono',monospace;color:${color};text-transform:uppercase;border-bottom:1px solid var(--border);background:var(--surface2);">${label}</td></tr>`;
   }
 
-  function cellFmt(v, cls, isDif) {
-    if (v===null||v===undefined) return `<td class="cf-sub zero">—</td>`;
-    if (Math.abs(v)<0.01) return `<td class="cf-sub zero">—</td>`;
-    let color = '';
-    if (cls==='orcado') color = v>=0 ? 'pos' : 'neg';
-    else if (cls==='realizado') color = v>=0 ? 'pos' : 'neg';
-    else if (cls==='dif') color = v>=0 ? 'pos' : 'neg';
-    return `<td class="cf-sub ${cls} ${color}">${fmtS(v)}</td>`;
-  }
-
-  function sectionRow(label, color) {
-    return `<tr><td colspan="${months.length*3+4}" style="padding:12px 12px 5px;font-size:10px;letter-spacing:2px;font-family:'DM Mono',monospace;color:${color};text-transform:uppercase;border-bottom:1px solid var(--border);background:var(--surface2);">${label}</td></tr>`;
-  }
-
-  // ── RECEITAS ──
-  rows.push(sectionRow('▸ RECEITAS','#4ade80'));
+  // RECEITAS
+  rows.push(section('▸ Receitas','#4ade80'));
   const tiposR = {};
   for (const r of S.receitas) { if(!tiposR[r.tipo]) tiposR[r.tipo]=[]; tiposR[r.tipo].push(r); }
   for (const [tipo, itens] of Object.entries(tiposR)) {
-    const orcVals = months.map(({y,m}) => {
+    const vals = months.map(({y,m}) => {
       let s=0; const key=mk(y,m);
       for (const r of itens) {
         const fim=r.fim||mk(y,11); if(key<r.inicio||key>fim) continue;
         const frac=ccFrac(r,cc); if(!frac) continue;
         if(r.tipo==='mensal'||r.tipo==='rendimento') s+=r.valor*frac;
         else if(r.npar>1){const d0=new Date(r.inicio+'-01'),diff=(y-d0.getFullYear())*12+(m-d0.getMonth());if(diff>=0&&diff<r.npar)s+=(r.vpar||r.valor/r.npar)*frac;}
-        else {if(key===r.inicio)s+=r.valor*frac;}
+        else{if(key===r.inicio)s+=r.valor*frac;}
       }
       return s;
     });
-    const realVals = months.map(({y,m}) => {
-      const key=mk(y,m);
-      let s=0;
-      for (const item of S.realizado) {
-        if(item.tipo!=='receita') continue;
-        if(!item.data||item.data.slice(0,7)!==key) continue;
-        s += item.valor * ccFracReal(item,cc);
-      }
-      return s;
-    });
-    rows.push(`<tr class=""><td style="padding-left:16px;">${TREC[tipo]||tipo}</td>${rowCells(orcVals,realVals)}</tr>`);
+    rows.push(`<tr><td style="padding-left:16px;">${TREC[tipo]||tipo}</td>${vals.map(v=>cell(v,'pos')).join('')}${cell(vals.reduce((a,b)=>a+b,0),'pos')}</tr>`);
   }
-  const recOrc  = months.map(({y,m})=>recMes(y,m,cc));
-  const recReal = months.map(({y,m})=>{
-    const key=mk(y,m); let s=0;
-    for(const item of S.realizado){if(item.tipo==='receita'&&item.data?.slice(0,7)===key)s+=item.valor*ccFracReal(item,cc);}
-    return s;
-  });
-  rows.push(`<tr class="total"><td>Total Receitas</td>${rowCells(recOrc,recReal)}</tr>`);
+  const recT = months.map(({y,m})=>recMes(y,m,cc));
+  rows.push(row('Total Receitas', recT, 'total'));
 
-  // ── DESPESAS ──
-  rows.push(sectionRow('▸ DESPESAS','#f87171'));
+  // DESPESAS
+  rows.push(section('▸ Despesas','#f87171'));
   for (const [cat,info] of Object.entries(CATS)) {
     if (!S.despesas.some(d=>d.cat===cat)) continue;
-    const orcVals  = months.map(({y,m})=>{const dc=desCat(y,m,cc); return dc[cat]||0;});
-    const realVals = months.map(({y,m})=>{
-      const key=mk(y,m); let s=0;
-      for(const item of S.realizado){if(item.tipo==='despesa'&&item.cat===cat&&item.data?.slice(0,7)===key)s+=item.valor*ccFracReal(item,cc);}
-      return s;
-    });
-    if(!orcVals.some(v=>v>0)&&!realVals.some(v=>v>0)) continue;
-    rows.push(`<tr><td style="padding-left:16px;">${info.emoji||''}${info.label||cat}</td>${rowCells(orcVals,realVals)}</tr>`);
+    const vals = months.map(({y,m})=>{const dc=desCat(y,m,cc);return dc[cat]||0;});
+    if (!vals.some(v=>v>0)) continue;
+    rows.push(`<tr><td style="padding-left:16px;">${info.emoji||''}${info.label||cat}</td>${vals.map(v=>cell(v,'neg')).join('')}${cell(vals.reduce((a,b)=>a+b,0),'neg')}</tr>`);
   }
-  const desOrc  = months.map(({y,m})=>desMes(y,m,cc));
-  const desReal = months.map(({y,m})=>{
-    const key=mk(y,m); let s=0;
-    for(const item of S.realizado){if(item.tipo==='despesa'&&item.data?.slice(0,7)===key)s+=item.valor*ccFracReal(item,cc);}
-    return s;
-  });
-  rows.push(`<tr class="total"><td>Total Despesas</td>${rowCells(desOrc,desReal)}</tr>`);
+  const desT = months.map(({y,m})=>desMes(y,m,cc));
+  rows.push(row('Total Despesas', desT, 'total'));
 
-  // ── APLICAÇÕES ──
+  // APLICAÇÕES
   if (S.aplicacoes.length) {
-    rows.push(sectionRow('▸ APLICAÇÕES','#a78bfa'));
+    rows.push(section('▸ Aplicações','#a78bfa'));
     for (const a of S.aplicacoes) {
-      const orcVals = months.map(({y,m})=>{
+      const vals = months.map(({y,m})=>{
         const key=mk(y,m);
         if(key===a.inicio) return -(parseFloat(a.capital)||0);
         if(key===a.fim){const r=calcApl(a);return r.capital+r.liquido;}
         return 0;
       });
-      if(!orcVals.some(v=>v!==0)) continue;
-      rows.push(`<tr><td style="padding-left:16px;">🔒 ${a.desc}</td>${rowCells(orcVals,null)}</tr>`);
+      if(!vals.some(v=>v!==0)) continue;
+      rows.push(`<tr><td style="padding-left:16px;">🔒 ${a.desc}</td>${vals.map(v=>cell(v,v>=0?'pos':'blk')).join('')}${cell(vals.reduce((a,b)=>a+b,0),'pos')}</tr>`);
     }
   }
 
-  // ── SALDO MENSAL ──
-  const salOrc  = months.map(({y,m},i)=>{const ap=aplMes(y,m);return recOrc[i]-desOrc[i]-ap.bloq+ap.res;});
-  const salReal = months.map((_,i)=>recReal[i]-desReal[i]);
-  rows.push(`<tr class="saldo-row"><td>SALDO MENSAL</td>${rowCells(salOrc,salReal)}</tr>`);
+  // SALDO
+  const salT = months.map(({y,m},i)=>{const ap=aplMes(y,m);return recT[i]-desT[i]-ap.bloq+ap.res;});
+  rows.push(row('SALDO MENSAL', salT, 'saldo'));
 
-  // ── SALDO ACUMULADO ──
-  let acumOrc=si, acumReal=si;
-  const acumOrcVals  = salOrc.map((v,i)=>{
+  let acum = si;
+  const acumVals = salT.map((v,i)=>{
     if(si&&siMes){const k=mk(months[i].y,months[i].m),sk=mk(siMes.y,siMes.m);if(k<sk)return null;}
-    acumOrc+=v; return acumOrc;
+    acum+=v; return acum;
   });
-  const acumRealVals = salReal.map((v,i)=>{
-    if(si&&siMes){const k=mk(months[i].y,months[i].m),sk=mk(siMes.y,siMes.m);if(k<sk)return null;}
-    acumReal+=v; return acumReal;
+  const acumCells = acumVals.map(v=>v===null?'<td class="zero">—</td>':cell(v,v>=0?'pos':'neg')).join('');
+  const lastAcum = acumVals.filter(v=>v!==null).pop()||0;
+  rows.push(`<tr class="saldo-row"><td>${si?'SALDO ACUMULADO (c/ saldo inicial)':'SALDO ACUMULADO'}</td>${acumCells}${cell(lastAcum,lastAcum>=0?'pos':'neg')}</tr>`);
+
+  body.innerHTML = rows.join('');
+}
+
+// ── FLUXO REALIZADO ─────────────────────────────────────────────────────────
+function renderFluxoReal() {
+  const head = document.getElementById('cfHeadReal');
+  const body = document.getElementById('cfBodyReal');
+  if (!head || !body) return;
+  const months = periodMonths();
+  const cc = currentCC;
+  const lbl = periodLabel();
+  const el = document.getElementById('fluxo-real-year-label');
+  if (el) el.textContent = lbl;
+
+  const colLabels = months.map(({y,m}) => {
+    const n = months.length;
+    if (periodMode==='anual'||n<=12) return MESES[m];
+    if (n<=36) return `${MESES[m]}/${String(y).slice(2)}`;
+    return `${String(m+1).padStart(2,'0')}/${String(y).slice(2)}`;
   });
-  // Render acumulado row manually (has nulls)
-  let acumCells='';
-  let aOT=0,aRT=0;
-  for(let i=0;i<months.length;i++){
-    const o=acumOrcVals[i],r=acumRealVals[i];
-    if(o===null){acumCells+='<td class="cf-sub zero">—</td><td class="cf-sub zero">—</td><td class="cf-sub zero">—</td>';continue;}
-    const dif=r!==null?(r-o):null;
-    aOT=o; aRT=r||0;
-    acumCells+=cellFmt(o,'orcado')+(r!==null?cellFmt(r,'realizado'):'<td class="zero">—</td>')+(dif!==null?cellFmt(dif,'dif',true):'<td class="zero">—</td>');
+  const nCols = months.length;
+
+  // Header: each month → Orç | Real | Dif
+  let headHtml = '<tr><th rowspan="2" style="min-width:140px;">Categoria</th>';
+  headHtml += colLabels.map(l=>`<th colspan="3" style="text-align:center;border-left:1px solid var(--border);">${l}</th>`).join('');
+  headHtml += '<th colspan="3" style="text-align:center;border-left:2px solid var(--accent3);">Total</th></tr>';
+  headHtml += '<tr>'+colLabels.map(()=>'<th class="cf-sub orcado">Orç</th><th class="cf-sub realizado">Real</th><th class="cf-sub dif">Dif</th>').join('')
+            + '<th class="cf-sub orcado">Orç</th><th class="cf-sub realizado">Real</th><th class="cf-sub dif">Dif</th></tr>';
+  head.innerHTML = headHtml;
+
+  function cellSub(v, cls) {
+    if (v===null||v===undefined||Math.abs(v)<0.01) return `<td class="cf-sub zero">—</td>`;
+    const color = v>=0?'pos':'neg';
+    return `<td class="cf-sub ${cls} ${color}">${fmtS(v)}</td>`;
   }
-  acumCells+=cellFmt(aOT,'orcado')+cellFmt(aRT,'realizado')+cellFmt(aRT-aOT,'dif',true);
+  function triCells(orcVals, realVals) {
+    let oT=0, rT=0, cells='';
+    for (let i=0; i<months.length; i++) {
+      const o=orcVals[i]||0, r=realVals[i]||0, d=r-o;
+      oT+=o; rT+=r;
+      cells += cellSub(o,'orcado')+cellSub(r,'realizado')+cellSub(d,'dif');
+    }
+    cells += cellSub(oT,'orcado')+cellSub(rT,'realizado')+cellSub(rT-oT,'dif');
+    return cells;
+  }
+  function section(label, color) {
+    return `<tr><td colspan="${nCols*3+4}" style="padding:12px 12px 5px;font-size:10px;letter-spacing:2px;font-family:'DM Mono',monospace;color:${color};text-transform:uppercase;border-bottom:1px solid var(--border);background:var(--surface2);">${label}</td></tr>`;
+  }
+
+  const rows = [];
+
+  // RECEITAS
+  rows.push(section('▸ Receitas','#4ade80'));
+  const tiposR = {};
+  for (const r of S.receitas) { if(!tiposR[r.tipo]) tiposR[r.tipo]=[]; tiposR[r.tipo].push(r); }
+  for (const [tipo, itens] of Object.entries(tiposR)) {
+    const orcV = months.map(({y,m}) => {
+      let s=0; const key=mk(y,m);
+      for (const r of itens) {
+        const fim=r.fim||mk(y,11); if(key<r.inicio||key>fim) continue;
+        const frac=ccFrac(r,cc); if(!frac) continue;
+        if(r.tipo==='mensal'||r.tipo==='rendimento') s+=r.valor*frac;
+        else if(r.npar>1){const d0=new Date(r.inicio+'-01'),diff=(y-d0.getFullYear())*12+(m-d0.getMonth());if(diff>=0&&diff<r.npar)s+=(r.vpar||r.valor/r.npar)*frac;}
+        else{if(key===r.inicio)s+=r.valor*frac;}
+      }
+      return s;
+    });
+    const realV = months.map(({y,m})=>{
+      const key=mk(y,m); let s=0;
+      for(const item of S.realizado){if(item.tipo==='receita'&&item.data?.slice(0,7)===key)s+=item.valor*ccFracReal(item,cc);}
+      return s;
+    });
+    rows.push(`<tr><td style="padding-left:16px;">${TREC[tipo]||tipo}</td>${triCells(orcV,realV)}</tr>`);
+  }
+  const recOrc  = months.map(({y,m})=>recMes(y,m,cc));
+  const recReal = months.map(({y,m})=>{const key=mk(y,m);let s=0;for(const i of S.realizado){if(i.tipo==='receita'&&i.data?.slice(0,7)===key)s+=i.valor*ccFracReal(i,cc);}return s;});
+  rows.push(`<tr class="total"><td>Total Receitas</td>${triCells(recOrc,recReal)}</tr>`);
+
+  // DESPESAS
+  rows.push(section('▸ Despesas','#f87171'));
+  for (const [cat,info] of Object.entries(CATS)) {
+    if (!S.despesas.some(d=>d.cat===cat)) continue;
+    const orcV  = months.map(({y,m})=>{const dc=desCat(y,m,cc);return dc[cat]||0;});
+    const realV = months.map(({y,m})=>{
+      const key=mk(y,m); let s=0;
+      for(const i of S.realizado){if(i.tipo==='despesa'&&i.cat===cat&&i.data?.slice(0,7)===key)s+=i.valor*ccFracReal(i,cc);}
+      return s;
+    });
+    if(!orcV.some(v=>v>0)&&!realV.some(v=>v>0)) continue;
+    rows.push(`<tr><td style="padding-left:16px;">${info.emoji||''}${info.label||cat}</td>${triCells(orcV,realV)}</tr>`);
+  }
+  const desOrc  = months.map(({y,m})=>desMes(y,m,cc));
+  const desReal = months.map(({y,m})=>{const key=mk(y,m);let s=0;for(const i of S.realizado){if(i.tipo==='despesa'&&i.data?.slice(0,7)===key)s+=i.valor*ccFracReal(i,cc);}return s;});
+  rows.push(`<tr class="total"><td>Total Despesas</td>${triCells(desOrc,desReal)}</tr>`);
+
+  // SALDO
+  const salOrc  = months.map((_,i)=>recOrc[i]-desOrc[i]);
+  const salReal = months.map((_,i)=>recReal[i]-desReal[i]);
+  rows.push(`<tr class="saldo-row"><td>SALDO MENSAL</td>${triCells(salOrc,salReal)}</tr>`);
+
+  // SALDO ACUMULADO
+  const si=saldoInicial(), siMes=saldoInicialMes();
+  let acO=si, acR=si;
+  let acumCells='';
+  let lastO=si, lastR=si;
+  for(let i=0;i<months.length;i++){
+    const k=mk(months[i].y,months[i].m);
+    if(si&&siMes&&k<mk(siMes.y,siMes.m)){acumCells+='<td class="cf-sub zero">—</td>'.repeat(3);continue;}
+    acO+=salOrc[i]; acR+=salReal[i]; lastO=acO; lastR=acR;
+    acumCells+=cellSub(acO,'orcado')+cellSub(acR,'realizado')+cellSub(acR-acO,'dif');
+  }
+  acumCells+=cellSub(lastO,'orcado')+cellSub(lastR,'realizado')+cellSub(lastR-lastO,'dif');
   rows.push(`<tr class="saldo-row"><td>${si?'SALDO ACUMULADO (c/ saldo inicial)':'SALDO ACUMULADO'}</td>${acumCells}</tr>`);
 
   body.innerHTML = rows.join('');
 }
+
+// keep renderFluxo as alias for compatibility
+function renderFluxo() { renderFluxoOrc(); renderFluxoReal(); }
+
 
 
 // ── CSV ────────────────────────────────────────────────────────────────────
@@ -3199,7 +3312,7 @@ function doPrint() {
   // Mark pages to print, hide others
   document.querySelectorAll('.page').forEach(p => p.classList.remove('print-active'));
   if (wantDash)  document.getElementById('page-dashboard').classList.add('print-active');
-  if (wantFluxo) document.getElementById('page-fluxo').classList.add('print-active');
+  if (wantFluxo) { document.getElementById('page-fluxo-orc')?.classList.add('print-active'); document.getElementById('page-fluxo-real')?.classList.add('print-active'); }
 
   // Trigger print then restore
   requestAnimationFrame(() => {
@@ -5035,6 +5148,7 @@ function loadCCLines(prefix, rateioCC) {
   const container = document.getElementById(`${prefix}-cc-lines`);
   if (!container) return;
   container.innerHTML = '';
+  if (!S.ccs) S.ccs = [];
   for (const l of (rateioCC||[])) {
     const line = document.createElement('div');
     line.className = 'cc-line';
