@@ -156,10 +156,27 @@
 
   /* CASHFLOW */
   .cf-table-wrap{overflow-x:auto;}
-  .cf-table{width:100%;border-collapse:collapse;font-family:'DM Mono',monospace;font-size:12px;min-width:1000px;}
+  .cf-table{width:100%;border-collapse:collapse;font-family:'DM Mono',monospace;font-size:12px;min-width:900px;}
   .cf-table th{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);background:var(--surface2);padding:10px 12px;text-align:right;}
   .cf-table th:first-child{text-align:left;}
   .cf-table td{padding:9px 12px;text-align:right;border-bottom:1px solid rgba(42,48,80,.4);font-size:12px;color:var(--text2);}
+  /* sub-columns for Orç/Real/Dif */
+  .cf-table .cf-sub{padding:7px 8px;font-size:11px;}
+  .cf-table th.cf-sub{font-size:8px;letter-spacing:1px;}
+  .cf-table th.orcado{color:var(--text3);}
+  .cf-table th.realizado{color:#60a5fa;}
+  .cf-table th.dif{color:#a78bfa;}
+  .cf-table td.orcado{color:var(--text2);}
+  .cf-table td.realizado{color:#93c5fd;}
+  .cf-table td.dif.pos{color:#4ade80 !important;}
+  .cf-table td.dif.neg{color:#f87171 !important;}
+  .info-box{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px 18px;font-size:13px;color:var(--text2);line-height:1.7;}
+  /* CC filter bar in topbar */
+  #cc-filter-bar{flex-shrink:0;}
+  @media(max-width:680px){
+    #cc-filter-bar{order:-1;width:100%;margin-bottom:4px;}
+    #cc-filter-bar select{width:100%;}
+  }
   .cf-table td:first-child{text-align:left;color:var(--text);font-size:11px;letter-spacing:.5px;}
   .cf-table tr.total td{background:var(--surface2);color:var(--text);font-weight:500;border-top:1px solid var(--border);}
   .cf-table tr.saldo-row td{font-weight:600;font-size:13px;border-top:2px solid var(--border);}
@@ -502,6 +519,7 @@
     </div>
     <div class="nav-section">
       <div class="nav-label">Sistema</div>
+      <div class="nav-item" data-page="ccs" onclick="navigate('ccs')"><span class="nav-dot"></span> 🏢 Centros de Custo</div>
       <div class="nav-item" data-page="config" onclick="navigate('config')"><span class="nav-dot"></span> ⚙ Configurações</div>
       <div class="nav-item" data-page="ajuda" onclick="navigate('ajuda')"><span class="nav-dot"></span> ❓ Instruções</div>
     </div>
@@ -538,6 +556,13 @@
     <div class="topbar-left">
       <button class="hamburger" onclick="toggleSidebar()" style="visibility:hidden;pointer-events:none;">☰</button>
       <div class="page-title" id="pageTitle">Dashboard</div>
+    </div>
+    <!-- CC FILTER -->
+    <div id="cc-filter-bar" style="display:flex;align-items:center;gap:6px;">
+      <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);letter-spacing:1px;white-space:nowrap;">🏢</span>
+      <select class="form-select" id="ccFilter" style="padding:5px 10px;font-size:12px;min-width:120px;max-width:160px;" onchange="onCCFilterChange()">
+        <option value="all">Todos os CCs</option>
+      </select>
     </div>
     <div class="period-controls">
       <!-- MODE TOGGLE -->
@@ -807,6 +832,22 @@
           </tr></thead>
           <tbody id="b3HistBody"></tbody></table>
         </div>
+      </div>
+    </div>
+
+    <!-- CENTROS DE CUSTO -->
+    <div class="page" id="page-ccs">
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Centros de Custo</div>
+          <button class="btn primary" onclick="openCCModal()">+ Novo Centro de Custo</button>
+        </div>
+        <div id="ccList" style="padding:8px 0;"></div>
+      </div>
+      <div class="info-box" style="margin-top:16px;">
+        <strong>O que é um Centro de Custo?</strong> É uma conta ou entidade para agrupar receitas e despesas. Exemplos: <em>Apartamento 101</em>, <em>Fazenda</em>, <em>Empresa XYZ</em>, <em>Pessoal</em>.<br>
+        Ao cadastrar receitas e despesas, você pode distribuir cada lançamento entre um ou mais centros de custo com percentuais de rateio.<br>
+        Use o filtro <strong>🏢 CC</strong> no topo das telas para ver somente os dados de um centro específico.
       </div>
     </div>
 
@@ -1375,10 +1416,57 @@
           <input class="form-input" id="real-nota" placeholder="Observação...">
         </div>
       </div>
+      <!-- RATEIO CC -->
+      <div id="real-cc-box" class="parcel-box" style="margin-top:6px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <span style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text3);">🏢 Centro de Custo (rateio)</span>
+          <span id="real-cc-pct-total" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text3);">0%</span>
+        </div>
+        <div id="real-cc-lines"></div>
+        <button type="button" class="btn sm" onclick="addCCLine('real')" style="margin-top:6px;font-size:12px;">+ Adicionar CC</button>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn" onclick="closeModal('real')">Cancelar</button>
       <button class="btn primary" onclick="salvarReal()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CENTRO DE CUSTO -->
+<div class="modal-overlay" id="modalCC">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-header">
+      <div class="modal-title" id="mCCTitle">Novo Centro de Custo</div>
+      <button class="modal-close" onclick="closeModal('cc')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row full">
+        <div class="form-group">
+          <label class="form-label">Nome</label>
+          <input class="form-input" id="cc-nome" placeholder="Ex: Apartamento 101, Fazenda, Pessoal...">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Emoji</label>
+          <input class="form-input" id="cc-emoji" placeholder="🏢" maxlength="4" style="font-size:20px;text-align:center;">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Cor</label>
+          <input type="color" class="form-input" id="cc-cor" value="#60a5fa" style="height:44px;padding:4px;cursor:pointer;">
+        </div>
+      </div>
+      <div class="form-row full">
+        <div class="form-group">
+          <label class="form-label">Descrição <small style="color:var(--text3);">(opcional)</small></label>
+          <input class="form-input" id="cc-desc" placeholder="Breve descrição...">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('cc')">Cancelar</button>
+      <button class="btn primary" onclick="salvarCC()">Salvar</button>
     </div>
   </div>
 </div>
@@ -1407,6 +1495,15 @@
           <div class="form-group"><label class="form-label">Nº Parcelas</label><input class="form-input" id="r-npar" type="number" min="1" value="1"></div>
           <div class="form-group"><label class="form-label">Valor/Parcela (R$)</label><input class="form-input" id="r-vpar" type="number" step="0.01" min="0" placeholder="calculado"></div>
         </div>
+      </div>
+      <!-- RATEIO CC -->
+      <div id="r-cc-box" class="parcel-box" style="margin-top:10px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <span style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text3);">🏢 Centros de Custo (rateio)</span>
+          <span id="r-cc-pct-total" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text3);">0%</span>
+        </div>
+        <div id="r-cc-lines"></div>
+        <button type="button" class="btn sm" onclick="addCCLine('r')" style="margin-top:6px;font-size:12px;">+ Adicionar CC</button>
       </div>
     </div>
     <div class="modal-footer"><button class="btn" onclick="closeModal('receita')">Cancelar</button><button class="btn primary" onclick="salvarReceita()">Salvar</button></div>
@@ -1473,6 +1570,15 @@
           </div>
           <div id="d-reaj-preview" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text3);line-height:1.8;padding:8px 0 2px;"></div>
         </div>
+      </div>
+      <!-- RATEIO CC -->
+      <div id="d-cc-box" class="parcel-box" style="margin-top:10px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <span style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text3);">🏢 Centros de Custo (rateio)</span>
+          <span id="d-cc-pct-total" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text3);">0%</span>
+        </div>
+        <div id="d-cc-lines"></div>
+        <button type="button" class="btn sm" onclick="addCCLine('d')" style="margin-top:6px;font-size:12px;">+ Adicionar CC</button>
       </div>
     </div>
     <div class="modal-footer"><button class="btn" onclick="closeModal('despesa')">Cancelar</button><button class="btn primary" onclick="salvarDespesa()">Salvar</button></div>
@@ -1960,15 +2066,19 @@ function toast(msg) {
 }
 
 // ── NAVIGATION ──────────────────────────────────────────────────────────────
-const PAGE_TITLES = {dashboard:'Dashboard',fluxo:'Fluxo de Caixa',realizado:'✅ Realizado vs Orçado',receitas:'Receitas',despesas:'Despesas',aplicacoes:'Aplicações Financeiras',b3:'📈 Carteira B3',config:'⚙ Configurações',ajuda:'❓ Instruções'};
+const PAGE_TITLES = {dashboard:'Dashboard',fluxo:'Fluxo de Caixa',ccs:'🏢 Centros de Custo',realizado:'✅ Realizado vs Orçado',receitas:'Receitas',despesas:'Despesas',aplicacoes:'Aplicações Financeiras',b3:'📈 Carteira B3',config:'⚙ Configurações',ajuda:'❓ Instruções'};
 
 function navigate(page) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-'+page).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.page===page));
   document.getElementById('pageTitle').textContent = PAGE_TITLES[page]||page;
+  // Show CC filter only on data pages
+  const ccBar = document.getElementById('cc-filter-bar');
+  if (ccBar) ccBar.style.display = ['ccs','config','ajuda','aplicacoes','b3'].includes(page) ? 'none' : 'flex';
   closeSidebar();
-  if (page === 'config') renderConfig();
+  if (page === 'ccs') renderCCs();
+  else if (page === 'config') renderConfig();
   else if (page === 'b3') renderB3();
   else if (page === 'realizado') renderRealizado();
   else refreshAll();
@@ -2279,6 +2389,7 @@ function openModal(tipo, id) {
     setV('r-npar', r?.npar||1);
     setV('r-vpar', r?.vpar||'');
     toggleRParcela();
+    loadCCLines('r', r?.rateioCC||[]);
     document.getElementById('modalReceita').classList.add('open');
   } else if (tipo==='despesa') {
     const d = id?S.despesas.find(x=>x.id===id):null;
@@ -2299,6 +2410,7 @@ function openModal(tipo, id) {
     setV('d-reaj-tipo', d?.reajTipo||'composto');
     toggleReajuste();
     toggleDFreq();
+    loadCCLines('d', d?.rateioCC||[]);
     document.getElementById('modalDespesa').classList.add('open');
   } else {
     const a = id?S.aplicacoes.find(x=>x.id===id):null;
@@ -2324,7 +2436,7 @@ function openModal(tipo, id) {
 }
 
 function closeModal(tipo) {
-  const ids = {receita:'modalReceita',despesa:'modalDespesa',aplicacao:'modalAplicacao',cat:'modalCat',b3:'modalB3',real:'modalReal'};
+  const ids = {receita:'modalReceita',despesa:'modalDespesa',aplicacao:'modalAplicacao',cat:'modalCat',b3:'modalB3',real:'modalReal',cc:'modalCC'};
   document.getElementById(ids[tipo]).classList.remove('open');
   editingId=null;
 }
@@ -2352,7 +2464,8 @@ function salvarReceita() {
   const desc=gV('r-desc').trim(), tipo=gV('r-tipo'), valor=gF('r-valor'), inicio=gV('r-inicio'), fim=gV('r-fim')||null;
   const npar=gI('r-npar')||1, vpar=gF('r-vpar')||null;
   if (!desc||!valor||!inicio) return alert('Preencha descrição, valor e mês de início.');
-  const obj = {desc,tipo,valor,inicio,fim,npar,vpar};
+  const rateioCC = readCCLines('r');
+  const obj = {desc,tipo,valor,inicio,fim,npar,vpar,rateioCC};
   if (editingId) S.receitas[S.receitas.findIndex(x=>x.id===editingId)] = {id:editingId,...obj};
   else S.receitas.push({id:uid(),...obj});
   persist(); closeModal('receita'); refreshAll();
@@ -2366,7 +2479,8 @@ function salvarDespesa() {
   const reajTaxa = reajOn ? (gF('d-reaj-taxa')||0) : 0;
   const reajTipo = gV('d-reaj-tipo')||'composto';
   if (!desc||!valor||!inicio) return alert('Preencha descrição, valor e mês de início.');
-  const obj = {desc,cat,freq,valor,inicio,fim,intervalo,npar,vpar,reajTaxa,reajTipo};
+  const rateioCC = readCCLines('d');
+  const obj = {desc,cat,freq,valor,inicio,fim,intervalo,npar,vpar,reajTaxa,reajTipo,rateioCC};
   if (editingId) S.despesas[S.despesas.findIndex(x=>x.id===editingId)] = {id:editingId,...obj};
   else S.despesas.push({id:uid(),...obj});
   persist(); closeModal('despesa'); refreshAll();
@@ -2394,84 +2508,95 @@ function excluir(tipo, id) {
 // ── CALC ENGINE ────────────────────────────────────────────────────────────
 function mk(y,m) { return `${y}-${String(m+1).padStart(2,'0')}`; }
 
-function recMes(y,m) {
+// CC fraction: what portion of item belongs to ccId filter
+function ccFrac(item, ccId) {
+  if (!ccId || ccId === 'all') return 1;
+  if (!item.rateioCC || item.rateioCC.length === 0) return 1;
+  const line = item.rateioCC.find(l => l.id === ccId);
+  return line ? (line.pct / 100) : 0;
+}
+
+// CC fraction for realizado entries
+function ccFracReal(item, ccId) {
+  if (!ccId || ccId === 'all') return 1;
+  if (!item.rateioCC || item.rateioCC.length === 0) return 1;
+  const line = item.rateioCC.find(l => l.id === ccId);
+  return line ? (line.pct / 100) : 0;
+}
+
+// Current CC filter (set by dropdown)
+let currentCC = 'all';
+
+function onCCFilterChange() {
+  currentCC = document.getElementById('ccFilter').value;
+  refreshAll();
+}
+
+function buildCCFilter() {
+  const sel = document.getElementById('ccFilter');
+  if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="all">Todos os CCs</option>';
+  for (const cc of S.ccs) {
+    const opt = document.createElement('option');
+    opt.value = cc.id;
+    opt.textContent = (cc.emoji||'🏢')+' '+cc.nome;
+    sel.appendChild(opt);
+  }
+  sel.value = S.ccs.find(c=>c.id===cur) ? cur : 'all';
+  currentCC = sel.value;
+}
+
+function recMes(y,m,ccId) {
+  const cc = ccId !== undefined ? ccId : currentCC;
   let t=0; const key=mk(y,m);
   for (const r of S.receitas) {
     const fim=r.fim||mk(y,11);
     if (key<r.inicio||key>fim) continue;
-    if (r.tipo==='mensal'||r.tipo==='rendimento') { t+=r.valor; }
+    const frac = ccFrac(r, cc);
+    if (!frac) continue;
+    if (r.tipo==='mensal'||r.tipo==='rendimento') { t+=r.valor*frac; }
     else if (r.npar>1) {
       const d0=new Date(r.inicio+'-01'), diff=(y-d0.getFullYear())*12+(m-d0.getMonth());
-      if (diff>=0&&diff<r.npar) t+=(r.vpar||r.valor/r.npar);
-    } else { if (key===r.inicio) t+=r.valor; }
+      if (diff>=0&&diff<r.npar) t+=(r.vpar||r.valor/r.npar)*frac;
+    } else { if (key===r.inicio) t+=r.valor*frac; }
   }
   return t;
 }
 
-function toggleReajuste() {
-  const on = document.getElementById('d-reaj-on').checked;
-  document.getElementById('d-reaj-fields').style.display = on ? 'block' : 'none';
-  if (on) updateReajPreview();
-}
-
-function updateReajPreview() {
-  const base  = gF('d-valor') || 0;
-  const taxa  = gF('d-reaj-taxa') || 0;
-  const tipo  = gV('d-reaj-tipo');
-  const el    = document.getElementById('d-reaj-preview');
-  if (!base || !taxa) { el.textContent = ''; return; }
-  const preview = [];
-  for (let i = 0; i < 4; i++) {
-    const v = valorComReajuste(base, taxa, tipo, i);
-    preview.push(`Mês +${i}: ${fmt(v)}`);
-  }
-  preview.push('...');
-  el.textContent = preview.join('  ·  ');
-}
-
-// Calcula o valor de uma despesa no mês `diff` a partir do início, com reajuste
-function valorComReajuste(base, taxa, tipo, diff) {
-  if (!taxa || diff === 0) return base;
-  if (tipo === 'composto') return base * Math.pow(1 + taxa / 100, diff);
-  if (tipo === 'simples')  return base * (1 + (taxa / 100) * diff);
-  if (tipo === 'fixo')     return base + taxa * diff;
-  return base;
-}
-
-// Valor efetivo de uma despesa d no mês (y,m), já considerando reajuste
-function desValor(d, diff) {
-  const base = d.freq === 'parcelado' ? (d.vpar || d.valor / d.npar) : d.valor;
-  if (!d.reajTaxa || d.reajTaxa === 0) return base;
-  return valorComReajuste(base, d.reajTaxa, d.reajTipo || 'composto', diff);
-}
-
-function desMes(y,m) {
+function desMes(y,m,ccId) {
+  const cc = ccId !== undefined ? ccId : currentCC;
   let t=0; const key=mk(y,m), dim=new Date(y,m+1,0).getDate();
   for (const d of S.despesas) {
     const fim=d.fim||mk(y,11);
     if (key<d.inicio||key>fim) continue;
+    const frac = ccFrac(d, cc);
+    if (!frac) continue;
     const d0=new Date(d.inicio+'-01'), diff=(y-d0.getFullYear())*12+(m-d0.getMonth());
     switch(d.freq) {
-      case 'mensal': t+=desValor(d,diff); break;
-      case 'anual': if(d0.getMonth()===m) t+=desValor(d,diff); break;
-      case 'semanal': t+=desValor(d,diff)*(Math.floor(dim/7)+1); break;
-      case 'diario': t+=desValor(d,diff)*dim; break;
-      case 'customDias': t+=desValor(d,diff)*Math.max(1,Math.floor(dim/d.intervalo)); break;
-      case 'customSemanas': t+=desValor(d,diff)*(Math.floor(Math.floor(dim/7)/d.intervalo)||1); break;
-      case 'customMeses': if(diff%d.intervalo===0) t+=desValor(d,diff); break;
-      case 'avulso': if(key===d.inicio) t+=desValor(d,diff); break;
-      case 'parcelado': if(diff>=0&&diff<d.npar) t+=desValor(d,diff); break;
+      case 'mensal': t+=desValor(d,diff)*frac; break;
+      case 'anual': if(d0.getMonth()===m) t+=desValor(d,diff)*frac; break;
+      case 'semanal': t+=desValor(d,diff)*(Math.floor(dim/7)+1)*frac; break;
+      case 'diario': t+=desValor(d,diff)*dim*frac; break;
+      case 'customDias': t+=desValor(d,diff)*Math.max(1,Math.floor(dim/d.intervalo))*frac; break;
+      case 'customSemanas': t+=desValor(d,diff)*(Math.floor(Math.floor(dim/7)/d.intervalo)||1)*frac; break;
+      case 'customMeses': if(diff%d.intervalo===0) t+=desValor(d,diff)*frac; break;
+      case 'avulso': if(key===d.inicio) t+=desValor(d,diff)*frac; break;
+      case 'parcelado': if(diff>=0&&diff<d.npar) t+=desValor(d,diff)*frac; break;
     }
   }
   return t;
 }
 
-function desCat(y,m) {
+function desCat(y,m,ccId) {
+  const cc = ccId !== undefined ? ccId : currentCC;
   const r={}; for(const c of Object.keys(CATS)) r[c]=0;
   const key=mk(y,m), dim=new Date(y,m+1,0).getDate();
   for (const d of S.despesas) {
     const fim=d.fim||mk(y,11);
     if (key<d.inicio||key>fim) continue;
+    const frac = ccFrac(d, cc);
+    if (!frac) continue;
     const d0=new Date(d.inicio+'-01'), diff=(y-d0.getFullYear())*12+(m-d0.getMonth());
     let v=0;
     switch(d.freq) {
@@ -2485,9 +2610,25 @@ function desCat(y,m) {
       case 'avulso': if(key===d.inicio) v=desValor(d,diff); break;
       case 'parcelado': if(diff>=0&&diff<d.npar) v=desValor(d,diff); break;
     }
-    r[d.cat]=(r[d.cat]||0)+v;
+    r[d.cat]=(r[d.cat]||0)+v*frac;
   }
   return r;
+}
+
+// Realizado total for a month with optional CC filter
+function realMes(y,m,ccId) {
+  const cc = ccId !== undefined ? ccId : currentCC;
+  const key = mk(y,m);
+  let rec=0, des=0;
+  for (const item of S.realizado) {
+    const iKey = item.data ? item.data.slice(0,7) : '';
+    if (iKey !== key) continue;
+    const frac = ccFracReal(item, cc);
+    if (!frac) continue;
+    if (item.tipo === 'receita') rec += item.valor * frac;
+    else des += item.valor * frac;
+  }
+  return {rec, des};
 }
 
 function aplMes(y,m) {
@@ -2499,6 +2640,7 @@ function aplMes(y,m) {
   }
   return {bloq,res};
 }
+
 
 function capitalBloq(y,m) {
   const key=mk(y,m); let t=0;
@@ -2527,6 +2669,7 @@ function refreshAll() {
 
   renderKPIs(); renderChart(); renderCats(); renderAplResumo();
   renderFluxo(); renderReceitas(); renderDespesas(); renderAplicacoes();
+  buildCCFilter();
 }
 
 function renderKPIs() {
@@ -2848,97 +2991,160 @@ function renderFluxo() {
   if (!head || !body) return;
   const months = periodMonths();
   const nCols  = months.length;
-  const colSpan = nCols + 2;
+  const cc     = currentCC;
 
   const colLabels = months.map(({y,m}) => {
     if (periodMode==='anual' || nCols<=12) return MESES[m];
     if (nCols<=36) return `${MESES[m]}/${String(y).slice(2)}`;
     return `${String(m+1).padStart(2,'0')}/${String(y).slice(2)}`;
   });
-  head.innerHTML = '<tr><th>Categoria</th>' + colLabels.map(l=>`<th>${l}</th>`).join('') + '<th>Total</th></tr>';
+
+  // Header: each month gets 3 cols (Orç | Real | Dif) + label + totais
+  let headHtml = '<tr><th rowspan="2" style="min-width:140px;">Categoria</th>';
+  headHtml += colLabels.map(l=>`<th colspan="3" style="text-align:center;border-left:1px solid var(--border);">${l}</th>`).join('');
+  headHtml += '<th colspan="3" style="text-align:center;border-left:2px solid var(--accent3);">Total Período</th></tr>';
+  headHtml += '<tr>' + colLabels.map(()=>`<th class="cf-sub orcado">Orç</th><th class="cf-sub realizado">Real</th><th class="cf-sub dif">Dif</th>`).join('') +
+              '<th class="cf-sub orcado">Orç</th><th class="cf-sub realizado">Real</th><th class="cf-sub dif">Dif</th></tr>';
+  head.innerHTML = headHtml;
 
   const si    = saldoInicial();
   const siMes = saldoInicialMes();
   const rows  = [];
 
+  function rowCells(orcVals, realVals) {
+    let orcTotal=0, realTotal=0;
+    let cells = '';
+    for (let i=0; i<months.length; i++) {
+      const o = orcVals[i]||0, r = realVals ? (realVals[i]||0) : null;
+      const hasReal = realVals !== null;
+      const dif = hasReal ? (r - o) : null;
+      orcTotal += o; if(hasReal) realTotal += r;
+      cells += cellFmt(o,'orcado') + (hasReal ? cellFmt(r,'realizado') : '<td class="cf-sub zero">—</td>') +
+               (dif!==null ? cellFmt(dif,'dif',true) : '<td class="cf-sub zero">—</td>');
+    }
+    const difTotal = realVals ? (realTotal - orcTotal) : null;
+    cells += cellFmt(orcTotal,'orcado') + (realVals ? cellFmt(realTotal,'realizado') : '<td class="zero">—</td>') +
+             (difTotal!==null ? cellFmt(difTotal,'dif',true) : '<td class="zero">—</td>');
+    return cells;
+  }
+
+  function cellFmt(v, cls, isDif) {
+    if (v===null||v===undefined) return `<td class="cf-sub zero">—</td>`;
+    if (Math.abs(v)<0.01) return `<td class="cf-sub zero">—</td>`;
+    let color = '';
+    if (cls==='orcado') color = v>=0 ? 'pos' : 'neg';
+    else if (cls==='realizado') color = v>=0 ? 'pos' : 'neg';
+    else if (cls==='dif') color = v>=0 ? 'pos' : 'neg';
+    return `<td class="cf-sub ${cls} ${color}">${fmtS(v)}</td>`;
+  }
+
+  function sectionRow(label, color) {
+    return `<tr><td colspan="${months.length*3+4}" style="padding:12px 12px 5px;font-size:10px;letter-spacing:2px;font-family:'DM Mono',monospace;color:${color};text-transform:uppercase;border-bottom:1px solid var(--border);background:var(--surface2);">${label}</td></tr>`;
+  }
+
   // ── RECEITAS ──
-  rows.push({label:'▸ RECEITAS', type:'section', color:'#4ade80'});
+  rows.push(sectionRow('▸ RECEITAS','#4ade80'));
   const tiposR = {};
-  for (const r of S.receitas) { if (!tiposR[r.tipo]) tiposR[r.tipo]=[]; tiposR[r.tipo].push(r); }
+  for (const r of S.receitas) { if(!tiposR[r.tipo]) tiposR[r.tipo]=[]; tiposR[r.tipo].push(r); }
   for (const [tipo, itens] of Object.entries(tiposR)) {
-    const vals = months.map(({y,m}) => {
+    const orcVals = months.map(({y,m}) => {
       let s=0; const key=mk(y,m);
       for (const r of itens) {
-        const fim = r.fim||mk(y,11);
-        if (key<r.inicio||key>fim) continue;
-        if (r.tipo==='mensal'||r.tipo==='rendimento') s+=r.valor;
-        else if (r.npar>1) { const d0=new Date(r.inicio+'-01'), diff=(y-d0.getFullYear())*12+(m-d0.getMonth()); if(diff>=0&&diff<r.npar) s+=(r.vpar||r.valor/r.npar); }
-        else { if(key===r.inicio) s+=r.valor; }
+        const fim=r.fim||mk(y,11); if(key<r.inicio||key>fim) continue;
+        const frac=ccFrac(r,cc); if(!frac) continue;
+        if(r.tipo==='mensal'||r.tipo==='rendimento') s+=r.valor*frac;
+        else if(r.npar>1){const d0=new Date(r.inicio+'-01'),diff=(y-d0.getFullYear())*12+(m-d0.getMonth());if(diff>=0&&diff<r.npar)s+=(r.vpar||r.valor/r.npar)*frac;}
+        else {if(key===r.inicio)s+=r.valor*frac;}
       }
       return s;
     });
-    rows.push({label:TREC[tipo]||tipo, vals, type:'rec'});
+    const realVals = months.map(({y,m}) => {
+      const key=mk(y,m);
+      let s=0;
+      for (const item of S.realizado) {
+        if(item.tipo!=='receita') continue;
+        if(!item.data||item.data.slice(0,7)!==key) continue;
+        s += item.valor * ccFracReal(item,cc);
+      }
+      return s;
+    });
+    rows.push(`<tr class=""><td style="padding-left:16px;">${TREC[tipo]||tipo}</td>${rowCells(orcVals,realVals)}</tr>`);
   }
-  const recT = months.map(({y,m}) => recMes(y,m));
-  rows.push({label:'Total Receitas', vals:recT, type:'total'});
+  const recOrc  = months.map(({y,m})=>recMes(y,m,cc));
+  const recReal = months.map(({y,m})=>{
+    const key=mk(y,m); let s=0;
+    for(const item of S.realizado){if(item.tipo==='receita'&&item.data?.slice(0,7)===key)s+=item.valor*ccFracReal(item,cc);}
+    return s;
+  });
+  rows.push(`<tr class="total"><td>Total Receitas</td>${rowCells(recOrc,recReal)}</tr>`);
 
   // ── DESPESAS ──
-  rows.push({label:'▸ DESPESAS', type:'section', color:'#f87171'});
+  rows.push(sectionRow('▸ DESPESAS','#f87171'));
   for (const [cat,info] of Object.entries(CATS)) {
     if (!S.despesas.some(d=>d.cat===cat)) continue;
-    const vals = months.map(({y,m}) => { const dc=desCat(y,m); return dc[cat]||0; });
-    if (!vals.some(v=>v>0)) continue;
-    rows.push({label:(info.emoji||'')+(info.label||cat), vals, type:'des'});
+    const orcVals  = months.map(({y,m})=>{const dc=desCat(y,m,cc); return dc[cat]||0;});
+    const realVals = months.map(({y,m})=>{
+      const key=mk(y,m); let s=0;
+      for(const item of S.realizado){if(item.tipo==='despesa'&&item.cat===cat&&item.data?.slice(0,7)===key)s+=item.valor*ccFracReal(item,cc);}
+      return s;
+    });
+    if(!orcVals.some(v=>v>0)&&!realVals.some(v=>v>0)) continue;
+    rows.push(`<tr><td style="padding-left:16px;">${info.emoji||''}${info.label||cat}</td>${rowCells(orcVals,realVals)}</tr>`);
   }
-  const desT = months.map(({y,m}) => desMes(y,m));
-  rows.push({label:'Total Despesas', vals:desT, type:'total'});
+  const desOrc  = months.map(({y,m})=>desMes(y,m,cc));
+  const desReal = months.map(({y,m})=>{
+    const key=mk(y,m); let s=0;
+    for(const item of S.realizado){if(item.tipo==='despesa'&&item.data?.slice(0,7)===key)s+=item.valor*ccFracReal(item,cc);}
+    return s;
+  });
+  rows.push(`<tr class="total"><td>Total Despesas</td>${rowCells(desOrc,desReal)}</tr>`);
 
   // ── APLICAÇÕES ──
   if (S.aplicacoes.length) {
-    rows.push({label:'▸ APLICAÇÕES — Capital Bloqueado', type:'section', color:'#a78bfa'});
+    rows.push(sectionRow('▸ APLICAÇÕES','#a78bfa'));
     for (const a of S.aplicacoes) {
-      const vals = months.map(({y,m}) => {
-        const key = mk(y,m);
-        if (key===a.inicio) return -(parseFloat(a.capital)||0);
-        if (key===a.fim) { const r=calcApl(a); return r.capital+r.liquido; }
+      const orcVals = months.map(({y,m})=>{
+        const key=mk(y,m);
+        if(key===a.inicio) return -(parseFloat(a.capital)||0);
+        if(key===a.fim){const r=calcApl(a);return r.capital+r.liquido;}
         return 0;
       });
-      if (!vals.some(v=>v!==0)) continue;
-      rows.push({label:'🔒 '+a.desc, vals, type:'blk'});
+      if(!orcVals.some(v=>v!==0)) continue;
+      rows.push(`<tr><td style="padding-left:16px;">🔒 ${a.desc}</td>${rowCells(orcVals,null)}</tr>`);
     }
-    const blkT = months.map(({y,m}) => { const ap=aplMes(y,m); return ap.res-ap.bloq; });
-    rows.push({label:'Saldo Aplicações', vals:blkT, type:'blk-total'});
   }
 
-  // ── SALDO ──
-  const salT = months.map(({y,m},i) => { const ap=aplMes(y,m); return recT[i]-desT[i]-ap.bloq+ap.res; });
-  rows.push({label:'SALDO MENSAL', vals:salT, type:'saldo'});
-  let acum = si;
-  const acumVals = salT.map((v,i) => {
-    if (si && siMes) { const curKey=mk(months[i].y,months[i].m), siKey=mk(siMes.y,siMes.m); if(curKey<siKey) return null; }
-    acum += v; return acum;
+  // ── SALDO MENSAL ──
+  const salOrc  = months.map(({y,m},i)=>{const ap=aplMes(y,m);return recOrc[i]-desOrc[i]-ap.bloq+ap.res;});
+  const salReal = months.map((_,i)=>recReal[i]-desReal[i]);
+  rows.push(`<tr class="saldo-row"><td>SALDO MENSAL</td>${rowCells(salOrc,salReal)}</tr>`);
+
+  // ── SALDO ACUMULADO ──
+  let acumOrc=si, acumReal=si;
+  const acumOrcVals  = salOrc.map((v,i)=>{
+    if(si&&siMes){const k=mk(months[i].y,months[i].m),sk=mk(siMes.y,siMes.m);if(k<sk)return null;}
+    acumOrc+=v; return acumOrc;
   });
-  rows.push({label: si ? 'SALDO ACUMULADO (c/ saldo inicial)' : 'SALDO ACUMULADO', vals:acumVals, type:'saldo', hasNull:true});
+  const acumRealVals = salReal.map((v,i)=>{
+    if(si&&siMes){const k=mk(months[i].y,months[i].m),sk=mk(siMes.y,siMes.m);if(k<sk)return null;}
+    acumReal+=v; return acumReal;
+  });
+  // Render acumulado row manually (has nulls)
+  let acumCells='';
+  let aOT=0,aRT=0;
+  for(let i=0;i<months.length;i++){
+    const o=acumOrcVals[i],r=acumRealVals[i];
+    if(o===null){acumCells+='<td class="cf-sub zero">—</td><td class="cf-sub zero">—</td><td class="cf-sub zero">—</td>';continue;}
+    const dif=r!==null?(r-o):null;
+    aOT=o; aRT=r||0;
+    acumCells+=cellFmt(o,'orcado')+(r!==null?cellFmt(r,'realizado'):'<td class="zero">—</td>')+(dif!==null?cellFmt(dif,'dif',true):'<td class="zero">—</td>');
+  }
+  acumCells+=cellFmt(aOT,'orcado')+cellFmt(aRT,'realizado')+cellFmt(aRT-aOT,'dif',true);
+  rows.push(`<tr class="saldo-row"><td>${si?'SALDO ACUMULADO (c/ saldo inicial)':'SALDO ACUMULADO'}</td>${acumCells}</tr>`);
 
-  const renderCell = (v, type) => {
-    if (v===null||v===undefined) return '<td class="zero">—</td>';
-    if (Math.abs(v)<0.01) return '<td class="zero">—</td>';
-    const c = type==='rec'?'pos':type==='des'?'neg':(type==='blk'||type==='blk-total')?(v>=0?'pos':'blk'):(v>=0?'pos':'neg');
-    return `<td class="${c}">${fmtS(v)}</td>`;
-  };
-
-  body.innerHTML = rows.map(row => {
-    if (row.type==='section') return `<tr><td colspan="${colSpan}" style="padding:14px 12px 6px;font-size:10px;letter-spacing:2px;font-family:'DM Mono',monospace;color:${row.color};text-transform:uppercase;border-bottom:1px solid var(--border);background:var(--surface2);">${row.label}</td></tr>`;
-    const cls = {'total':'total','blk-total':'total','saldo':'saldo-row','blk':'blocked-row'}[row.type]||'';
-    const validVals = row.vals.filter(v=>v!==null&&v!==undefined);
-    const total = validVals.reduce((a,b)=>a+b,0);
-    const cells = row.vals.map(v=>renderCell(v,row.type)).join('');
-    const tc = row.type==='rec'?'pos':row.type==='des'?'neg':(row.type==='blk'||row.type==='blk-total')?(total>=0?'pos':'blk'):(total>=0?'pos':'neg');
-    const totalCell = row.hasNull ? '—' : (Math.abs(total)<0.01?'—':fmtS(total));
-    const totalCls  = row.hasNull ? 'zero' : (Math.abs(total)<0.01?'zero':tc);
-    return `<tr class="${cls}"><td>${row.label}</td>${cells}<td class="${totalCls}">${totalCell}</td></tr>`;
-  }).join('');
+  body.innerHTML = rows.join('');
 }
+
 
 // ── CSV ────────────────────────────────────────────────────────────────────
 function exportCSV() {
@@ -4357,6 +4563,7 @@ function openRealModal(id) {
   buildCatSelect('real-cat', item?.cat || Object.keys(CATS)[0] || 'outro');
   toggleRealTipo();
   if (item?.cat) setV('real-cat', item.cat);
+  loadCCLines('real', item?.rateioCC||[]);
   document.getElementById('modalReal').classList.add('open');
 }
 
@@ -4374,7 +4581,8 @@ function salvarReal() {
   const cat   = tipo === 'despesa' ? gV('real-cat') : null;
   const nota  = gV('real-nota').trim();
   if (!data || !desc || !valor) return alert('Preencha data, descrição e valor.');
-  const obj = { tipo, data, desc, valor, cat, nota };
+  const rateioCC = readCCLines('real');
+  const obj = { tipo, data, desc, valor, cat, nota, rateioCC };
   if (editingId) {
     const i = S.realizado.findIndex(r => r.id === editingId);
     if (i >= 0) S.realizado[i] = { id: editingId, ...obj };
@@ -4711,6 +4919,165 @@ function confirmImportExtrato(ops) {
   toast(`✅ ${count} lançamento${count!==1?'s':''} importado${count!==1?'s':''} do extrato`);
 }
 
+// ── CENTROS DE CUSTO ───────────────────────────────────────────────────────
+
+function openCCModal(id) {
+  const cc = id ? S.ccs.find(c=>c.id===id) : null;
+  editingId = id||null;
+  document.getElementById('mCCTitle').textContent = id ? 'Editar Centro de Custo' : 'Novo Centro de Custo';
+  document.getElementById('cc-nome').value  = cc?.nome  || '';
+  document.getElementById('cc-emoji').value = cc?.emoji || '🏢';
+  document.getElementById('cc-cor').value   = cc?.cor   || '#60a5fa';
+  document.getElementById('cc-desc').value  = cc?.desc  || '';
+  document.getElementById('modalCC').classList.add('open');
+}
+
+function salvarCC() {
+  const nome  = document.getElementById('cc-nome').value.trim();
+  const emoji = document.getElementById('cc-emoji').value.trim() || '🏢';
+  const cor   = document.getElementById('cc-cor').value;
+  const desc  = document.getElementById('cc-desc').value.trim();
+  if (!nome) return alert('Informe um nome para o centro de custo.');
+  const obj = {nome, emoji, cor, desc};
+  if (editingId) {
+    const i = S.ccs.findIndex(c=>c.id===editingId);
+    if (i>=0) S.ccs[i] = {id:editingId, ...obj};
+  } else {
+    S.ccs.push({id:uid(), ...obj});
+  }
+  persist();
+  closeModal('cc');
+  renderCCs();
+  buildCCFilter();
+  toast(`✓ CC "${nome}" salvo`);
+}
+
+function excluirCC(id) {
+  const cc = S.ccs.find(c=>c.id===id);
+  if (!confirm(`Excluir "${cc?.nome}"? Os rateios associados serão removidos dos lançamentos.`)) return;
+  S.ccs = S.ccs.filter(c=>c.id!==id);
+  // Remove cc from all rateioCC arrays
+  for (const r of S.receitas) r.rateioCC = (r.rateioCC||[]).filter(l=>l.id!==id);
+  for (const d of S.despesas) d.rateioCC = (d.rateioCC||[]).filter(l=>l.id!==id);
+  for (const r of S.realizado) r.rateioCC = (r.rateioCC||[]).filter(l=>l.id!==id);
+  persist();
+  renderCCs();
+  buildCCFilter();
+  toast('CC excluído');
+}
+
+function renderCCs() {
+  const el = document.getElementById('ccList');
+  if (!el) return;
+  if (!S.ccs.length) {
+    el.innerHTML = `<div style="padding:32px;text-align:center;color:var(--text3);">
+      <div style="font-size:36px;margin-bottom:12px;">🏢</div>
+      <div style="font-size:14px;margin-bottom:8px;">Nenhum centro de custo cadastrado</div>
+      <div style="font-size:12px;color:var(--text3);">Clique em <strong>+ Novo Centro de Custo</strong> para começar</div>
+    </div>`;
+    return;
+  }
+  el.innerHTML = S.ccs.map(cc => {
+    // Count linked records
+    const nRec = S.receitas.filter(r=>(r.rateioCC||[]).some(l=>l.id===cc.id)).length;
+    const nDes = S.despesas.filter(d=>(d.rateioCC||[]).some(l=>l.id===cc.id)).length;
+    const nReal= S.realizado.filter(r=>(r.rateioCC||[]).some(l=>l.id===cc.id)).length;
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;background:var(--surface);">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span style="font-size:28px;width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:${cc.cor}22;border:1.5px solid ${cc.cor}44;">${cc.emoji||'🏢'}</span>
+        <div>
+          <div style="font-weight:600;font-size:14px;color:var(--text);">${cc.nome}</div>
+          ${cc.desc ? `<div style="font-size:12px;color:var(--text3);margin-top:2px;">${cc.desc}</div>` : ''}
+          <div style="font-size:11px;color:var(--text3);margin-top:4px;font-family:'DM Mono',monospace;">${nRec} receitas · ${nDes} despesas · ${nReal} realizados</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;">
+        <button class="btn sm" onclick="openCCModal('${cc.id}')">✏</button>
+        <button class="btn sm danger" onclick="excluirCC('${cc.id}')">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── CC RATEIO LINES IN MODALS ──────────────────────────────────────────────
+
+function addCCLine(prefix) {
+  if (!S.ccs.length) return alert('Cadastre ao menos um Centro de Custo primeiro.');
+  const container = document.getElementById(`${prefix}-cc-lines`);
+  const line = document.createElement('div');
+  line.className = 'cc-line';
+  line.style.cssText = 'display:flex;align-items:center;gap:6px;margin-bottom:6px;';
+  const sel = document.createElement('select');
+  sel.className = 'form-select';
+  sel.style.flex = '1';
+  for (const cc of S.ccs) {
+    const opt = document.createElement('option');
+    opt.value = cc.id;
+    opt.textContent = (cc.emoji||'🏢')+' '+cc.nome;
+    sel.appendChild(opt);
+  }
+  const pct = document.createElement('input');
+  pct.type = 'number'; pct.min='1'; pct.max='100'; pct.step='1';
+  pct.className = 'form-input'; pct.style.width='70px'; pct.placeholder='%';
+  pct.oninput = () => updateCCPctTotal(prefix);
+  const rm = document.createElement('button');
+  rm.type = 'button'; rm.className = 'btn sm danger'; rm.textContent = '✕';
+  rm.onclick = () => { line.remove(); updateCCPctTotal(prefix); };
+  line.append(sel, pct, rm);
+  container.appendChild(line);
+  updateCCPctTotal(prefix);
+}
+
+function loadCCLines(prefix, rateioCC) {
+  const container = document.getElementById(`${prefix}-cc-lines`);
+  if (!container) return;
+  container.innerHTML = '';
+  for (const l of (rateioCC||[])) {
+    const line = document.createElement('div');
+    line.className = 'cc-line';
+    line.style.cssText = 'display:flex;align-items:center;gap:6px;margin-bottom:6px;';
+    const sel = document.createElement('select');
+    sel.className = 'form-select'; sel.style.flex='1';
+    for (const cc of S.ccs) {
+      const opt = document.createElement('option');
+      opt.value=cc.id; opt.textContent=(cc.emoji||'🏢')+' '+cc.nome;
+      if(cc.id===l.id) opt.selected=true;
+      sel.appendChild(opt);
+    }
+    const pct = document.createElement('input');
+    pct.type='number'; pct.min='1'; pct.max='100'; pct.step='1';
+    pct.className='form-input'; pct.style.width='70px'; pct.value=l.pct||'';
+    pct.oninput = () => updateCCPctTotal(prefix);
+    const rm = document.createElement('button');
+    rm.type='button'; rm.className='btn sm danger'; rm.textContent='✕';
+    rm.onclick=()=>{line.remove();updateCCPctTotal(prefix);};
+    line.append(sel, pct, rm);
+    container.appendChild(line);
+  }
+  updateCCPctTotal(prefix);
+}
+
+function readCCLines(prefix) {
+  const lines = document.querySelectorAll(`#${prefix}-cc-lines .cc-line`);
+  const result = [];
+  for (const line of lines) {
+    const id  = line.querySelector('select')?.value;
+    const pct = parseFloat(line.querySelector('input')?.value)||0;
+    if (id && pct>0) result.push({id, pct});
+  }
+  return result;
+}
+
+function updateCCPctTotal(prefix) {
+  const lines  = document.querySelectorAll(`#${prefix}-cc-lines .cc-line`);
+  let total = 0;
+  for (const line of lines) total += parseFloat(line.querySelector('input')?.value)||0;
+  const el = document.getElementById(`${prefix}-cc-pct-total`);
+  if (!el) return;
+  el.textContent = total+'%';
+  el.style.color = total===100 ? '#4ade80' : total>100 ? '#f87171' : 'var(--text3)';
+}
+
 // ── INIT ──────────────────────────────────────────────────────────────────
 document.getElementById('yearDisplay').textContent = currentYear;
 // Default months
@@ -4718,6 +5085,7 @@ const _now = new Date();
 const _nowMes = `${_now.getFullYear()}-${String(_now.getMonth()+1).padStart(2,'0')}`;
 document.getElementById('saldoInicialMes').value = mk(_now.getFullYear(), _now.getMonth());
 document.getElementById('realMes').value = _nowMes;
+buildCCFilter();
 refreshAll();
 if (localStorage.getItem('fluxocaixa_data')) {
   setTimeout(() => toast('✅ Dados carregados automaticamente'), 600);
