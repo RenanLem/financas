@@ -52,7 +52,7 @@
 
   /* MAIN */
   .main{margin-left:220px;flex:1;display:flex;flex-direction:column;min-height:100vh;}
-  .topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 32px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;}
+  .topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 32px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;padding-top:env(safe-area-inset-top);}
   .page-title{font-family:'DM Serif Display',serif;font-size:22px;}
   .year-selector{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 14px;font-family:'DM Mono',monospace;font-size:14px;}
   .year-btn{background:none;border:none;color:var(--text2);cursor:pointer;font-size:16px;padding:0 4px;transition:color .15s;}
@@ -406,8 +406,8 @@
     .main{margin-left:0;}
     .cards-row,.cards-row-5{grid-template-columns:1fr 1fr;gap:10px;}
     .content{padding:14px 14px 80px;}
-    .topbar{padding:0 14px;height:56px;flex-wrap:wrap;min-height:56px;}
-    .hamburger{display:flex!important;}
+    .topbar{padding:0 14px;height:56px;flex-wrap:wrap;min-height:56px;padding-top:env(safe-area-inset-top);height:calc(56px + env(safe-area-inset-top));}
+    .hamburger{display:flex!important;min-width:52px;min-height:52px;font-size:24px;padding:12px 16px;}
     .period-controls{gap:6px;flex-wrap:wrap;}
     /* Bottom action bar on mobile */
     .sidebar-footer{display:none;}
@@ -438,7 +438,7 @@
     .card{padding:12px 14px;}
   }
   @keyframes modalUp{from{transform:translateY(40px);opacity:.5;}to{transform:none;opacity:1;}}
-  .hamburger{display:none;background:none;border:1px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text);cursor:pointer;font-size:16px;align-items:center;}
+  .hamburger{display:none;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);cursor:pointer;font-size:22px;align-items:center;min-width:48px;min-height:48px;justify-content:center;-webkit-tap-highlight-color:transparent;}
   .overlay-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:90;}
   .overlay-bg.open{display:block;}
 
