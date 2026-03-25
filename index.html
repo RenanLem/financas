@@ -4775,8 +4775,8 @@ function renderRealComp(desOrcCat, lanc) {
   const rDiff = recRealVal - recOrcVal;
   const rPct  = recOrcVal > 0 ? ((recRealVal/recOrcVal)*100).toFixed(0)+'%' : '—';
   const rBar  = recOrcVal > 0 ? Math.min(100, (recRealVal/recOrcVal)*100) : 0;
-  rows += `<tr style="background:rgba(74,222,128,.04);">
-    <td style="color:var(--text);font-weight:600;">📈 Receitas</td>
+  rows += `<tr style="background:rgba(74,222,128,.06);cursor:pointer;" onclick="openRealModalPre('receita',null,'📈 Receita')" title="Clique para lançar receita realizada">
+    <td style="color:var(--text);font-weight:600;">📈 Receitas <span style="font-size:10px;color:var(--text3);margin-left:6px;">+ lançar</span></td>
     <td style="text-align:right;font-family:'DM Mono',monospace;">${fmt(recOrcVal)}</td>
     <td style="text-align:right;font-family:'DM Mono',monospace;">${fmt(recRealVal)}
       <div class="real-bar-wrap"><div class="real-bar ok" style="width:${rBar}%"></div></div>
@@ -4797,8 +4797,8 @@ function renderRealComp(desOrcCat, lanc) {
     const pct  = orc > 0 ? ((real/orc)*100).toFixed(0)+'%' : '—';
     const barW = orc > 0 ? Math.min(120, (real/orc)*100) : (real > 0 ? 100 : 0);
     const over = real > orc;
-    rows += `<tr>
-      <td><span class="cat-badge"><span class="cat-dot" style="background:${info.color}"></span>${info.emoji} ${info.label}</span></td>
+    rows += `<tr style="cursor:pointer;" onclick="openRealModalPre('despesa','${cat}','${info.emoji} ${info.label}')" title="Clique para lançar realizado desta categoria">
+      <td><span class="cat-badge"><span class="cat-dot" style="background:${info.color}"></span>${info.emoji} ${info.label} <span style="font-size:10px;color:var(--text3);margin-left:4px;">+ lançar</span></span></td>
       <td style="text-align:right;font-family:'DM Mono',monospace;">${orc > 0 ? fmt(orc) : '—'}</td>
       <td style="text-align:right;font-family:'DM Mono',monospace;">${real > 0 ? fmt(real) : '—'}
         ${orc > 0 ? `<div class="real-bar-wrap"><div class="real-bar ${over?'over':'ok'}" style="width:${Math.min(100,barW)}%"></div></div>` : ''}
@@ -5034,6 +5034,81 @@ function confirmImportExtrato(ops) {
   toast(`✅ ${count} lançamento${count!==1?'s':''} importado${count!==1?'s':''} do extrato`);
 }
 
+// ── CC EMOJI PICKER ────────────────────────────────────────────────────────
+let _ccEmojiCat = 0;
+
+function toggleCCEmojiPicker() {
+  const panel = document.getElementById('ccEmojiPickerPanel');
+  const open = panel.style.display === 'none';
+  panel.style.display = open ? 'block' : 'none';
+  if (open) {
+    renderCCEmojiTabs();
+    renderCCEmojiGrid(_ccEmojiCat);
+    setTimeout(() => document.getElementById('ccEmojiSearch')?.focus(), 100);
+  }
+}
+
+function renderCCEmojiTabs() {
+  const tabs = document.getElementById('ccEmojiCategoryTabs');
+  if (!tabs) return;
+  tabs.innerHTML = EMOJI_CATS.map((cat, i) =>
+    `<button class="emoji-btn" onclick="selectCCEmojiCat(${i})" title="${cat.name}"
+      style="${i===_ccEmojiCat?'background:var(--surface3);':''}">${cat.icon}</button>`
+  ).join('');
+}
+
+function selectCCEmojiCat(i) {
+  _ccEmojiCat = i;
+  document.getElementById('ccEmojiSearch').value = '';
+  renderCCEmojiTabs();
+  renderCCEmojiGrid(i);
+}
+
+function renderCCEmojiGrid(catIdx, emojis) {
+  const grid = document.getElementById('ccEmojiGrid');
+  if (!grid) return;
+  const list = emojis || EMOJI_CATS[catIdx].emojis;
+  grid.innerHTML = list.map(e =>
+    `<button class="emoji-btn" onclick="pickCCEmoji('${e}')" title="${e}">${e}</button>`
+  ).join('');
+}
+
+function filterCCEmojis(q) {
+  q = q.trim();
+  if (!q) { renderCCEmojiGrid(_ccEmojiCat); return; }
+  const results = [];
+  const seen = new Set();
+  for (const [emoji, kws] of Object.entries(EMOJI_KEYWORDS)) {
+    if (kws.some(k => k.includes(q.toLowerCase())) && !seen.has(emoji)) {
+      results.push(emoji); seen.add(emoji);
+    }
+  }
+  renderCCEmojiGrid(_ccEmojiCat, results.length ? results : EMOJI_CATS.flatMap(c=>c.emojis).slice(0,80));
+}
+
+function pickCCEmoji(e) {
+  document.getElementById('cc-emoji').value = e;
+  document.getElementById('ccEmojiPickerPanel').style.display = 'none';
+}
+
+// ── LANÇAR REALIZADO DIRETAMENTE DA TABELA DE COMPARAÇÃO ───────────────────
+function openRealModalPre(tipo, cat, label) {
+  // open real modal pre-filled with tipo and cat
+  openRealModal(null);
+  // after a tick so the modal is open and fields rendered
+  setTimeout(() => {
+    setV('real-tipo', tipo);
+    toggleRealTipo();
+    if (cat && tipo === 'despesa') {
+      buildCatSelect('real-cat', cat);
+      setV('real-cat', cat);
+    }
+    if (label) setV('real-desc', label);
+    // set date to today
+    setV('real-data', new Date().toISOString().slice(0,10));
+  }, 30);
+}
+
 // ── CENTROS DE CUSTO ───────────────────────────────────────────────────────
 
 function openCCModal(id) {
@@ -5044,6 +5119,9 @@ function openCCModal(id) {
   document.getElementById('cc-emoji').value = cc?.emoji || '🏢';
   document.getElementById('cc-cor').value   = cc?.cor   || '#60a5fa';
   document.getElementById('cc-desc').value  = cc?.desc  || '';
+  // close emoji picker if open
+  const panel = document.getElementById('ccEmojiPickerPanel');
+  if (panel) panel.style.display = 'none';
   document.getElementById('modalCC').classList.add('open');
 }
 
