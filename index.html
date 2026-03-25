@@ -1827,46 +1827,53 @@
 
 <!-- IMPORT MODAL -->
 <div class="pdf-modal" id="importModal">
-  <div class="pdf-panel" style="width:500px;max-height:90vh;overflow-y:auto;">
-    <h3>📥 Importar de outro arquivo</h3>
-    <p>Selecione quais dados importar do arquivo HTML. Registros com a mesma descrição e data de início já existentes <strong style="color:var(--gold)">não serão duplicados</strong>.</p>
+  <div class="pdf-panel" style="width:520px;max-height:90vh;overflow-y:auto;">
+    <h3>📥 Importar Backup</h3>
+    <p style="color:var(--text2);font-size:13px;">Importa <strong>todos os dados</strong> do arquivo de backup: receitas, despesas, aplicações, B3, lançamentos realizados, centros de custo e categorias personalizadas.</p>
 
     <!-- File info -->
     <div id="importFileInfo" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:16px;">
-      <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text3);margin-bottom:8px;letter-spacing:1px;text-transform:uppercase;">Arquivo carregado</div>
-      <div id="importFileName" style="font-size:13px;color:var(--text);"></div>
-      <div id="importFileSummary" style="font-size:12px;color:var(--text3);margin-top:4px;"></div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text3);margin-bottom:6px;letter-spacing:1px;text-transform:uppercase;">Arquivo carregado</div>
+      <div id="importFileName" style="font-size:13px;color:var(--text);font-weight:600;"></div>
+      <div id="importFileSummary" style="font-size:12px;color:var(--text3);margin-top:6px;line-height:1.8;"></div>
     </div>
 
     <!-- Section toggles -->
     <div id="importSections" style="display:none;">
-      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);margin-bottom:10px;">O que importar</div>
-      <div class="pdf-options" id="importOpts">
+      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);margin-bottom:10px;">Selecionar o que importar</div>
+      <div class="pdf-options" id="importOpts" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
         <label class="pdf-opt" id="importOptRec">
           <input type="checkbox" id="chkRec" checked style="accent-color:var(--green);width:15px;height:15px;margin-top:2px;flex-shrink:0;">
-          <div>
-            <div class="pdf-opt-label">📈 Receitas</div>
-            <div class="pdf-opt-sub" id="lblRec">—</div>
-          </div>
+          <div><div class="pdf-opt-label">📈 Receitas</div><div class="pdf-opt-sub" id="lblRec">—</div></div>
         </label>
         <label class="pdf-opt" id="importOptDes">
           <input type="checkbox" id="chkDes" checked style="accent-color:var(--red);width:15px;height:15px;margin-top:2px;flex-shrink:0;">
-          <div>
-            <div class="pdf-opt-label">💸 Despesas</div>
-            <div class="pdf-opt-sub" id="lblDes">—</div>
-          </div>
+          <div><div class="pdf-opt-label">💸 Despesas</div><div class="pdf-opt-sub" id="lblDes">—</div></div>
         </label>
         <label class="pdf-opt" id="importOptApl">
           <input type="checkbox" id="chkApl" checked style="accent-color:var(--accent3);width:15px;height:15px;margin-top:2px;flex-shrink:0;">
-          <div>
-            <div class="pdf-opt-label">🏦 Aplicações Financeiras</div>
-            <div class="pdf-opt-sub" id="lblApl">—</div>
-          </div>
+          <div><div class="pdf-opt-label">🏦 Aplicações</div><div class="pdf-opt-sub" id="lblApl">—</div></div>
+        </label>
+        <label class="pdf-opt" id="importOptB3">
+          <input type="checkbox" id="chkB3" checked style="accent-color:#a78bfa;width:15px;height:15px;margin-top:2px;flex-shrink:0;">
+          <div><div class="pdf-opt-label">📈 Carteira B3</div><div class="pdf-opt-sub" id="lblB3">—</div></div>
+        </label>
+        <label class="pdf-opt" id="importOptReal">
+          <input type="checkbox" id="chkReal" checked style="accent-color:#60a5fa;width:15px;height:15px;margin-top:2px;flex-shrink:0;">
+          <div><div class="pdf-opt-label">✅ Realizados</div><div class="pdf-opt-sub" id="lblReal">—</div></div>
+        </label>
+        <label class="pdf-opt" id="importOptCCs">
+          <input type="checkbox" id="chkCCs" checked style="accent-color:#f59e0b;width:15px;height:15px;margin-top:2px;flex-shrink:0;">
+          <div><div class="pdf-opt-label">🏢 Centros de Custo</div><div class="pdf-opt-sub" id="lblCCs">—</div></div>
+        </label>
+        <label class="pdf-opt" id="importOptCats" style="grid-column:1/-1;">
+          <input type="checkbox" id="chkCats" checked style="accent-color:#f472b6;width:15px;height:15px;margin-top:2px;flex-shrink:0;">
+          <div><div class="pdf-opt-label">🏷️ Categorias de Despesas (tipos personalizados)</div><div class="pdf-opt-sub" id="lblCats">—</div></div>
         </label>
       </div>
 
       <!-- Conflict strategy -->
-      <div style="margin-bottom:16px;">
+      <div style="margin:16px 0;">
         <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);margin-bottom:8px;">Ao encontrar registro já existente</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:var(--text2);">
@@ -1876,24 +1883,24 @@
             <input type="radio" name="conflito" value="overwrite" style="accent-color:var(--accent3);"> Substituir pelo importado
           </label>
           <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:var(--text2);">
-            <input type="radio" name="conflito" value="duplicate" style="accent-color:var(--accent3);"> Importar mesmo assim
+            <input type="radio" name="conflito" value="duplicate" style="accent-color:var(--accent3);"> Importar mesmo assim (duplicar)
           </label>
         </div>
       </div>
 
       <!-- Preview counts -->
-      <div id="importPreview" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:18px;font-family:'DM Mono',monospace;font-size:12px;line-height:2;display:none;"></div>
+      <div id="importPreview" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:16px;font-family:'DM Mono',monospace;font-size:12px;line-height:2;display:none;"></div>
     </div>
 
     <!-- No data warning -->
     <div id="importNoData" style="display:none;color:var(--red);font-size:13px;margin-bottom:16px;padding:10px 14px;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.2);border-radius:var(--radius-sm);">
-      ⚠️ Nenhum dado encontrado no arquivo. Verifique se é um arquivo válido gerado por este app.
+      ⚠️ Nenhum dado encontrado. Verifique se é um arquivo de backup válido deste app.
     </div>
 
     <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;">
       <button class="btn" onclick="closeImportModal()">Cancelar</button>
-      <button class="btn" onclick="triggerImport()" style="color:var(--gold);border-color:rgba(251,191,36,.3);">📂 Escolher outro arquivo</button>
-      <button class="btn primary" id="btnDoImport" onclick="doImport()" style="display:none;">✓ Importar dados</button>
+      <button class="btn" onclick="triggerImport()" style="color:var(--gold);border-color:rgba(251,191,36,.3);">📂 Outro arquivo</button>
+      <button class="btn primary" id="btnDoImport" onclick="doImport()" style="display:none;">✓ Importar selecionados</button>
     </div>
   </div>
 </div>
@@ -3685,7 +3692,7 @@ function excluirTodasCats() {
 }
 
 // ── IMPORT ────────────────────────────────────────────────────────────────
-let _importData = null; // holds parsed data from selected file
+let _importData = null;
 
 function triggerImport() {
   document.getElementById('importFileInput').value = '';
@@ -3695,7 +3702,6 @@ function triggerImport() {
 function handleImportFile(input) {
   const file = input.files[0];
   if (!file) return;
-
   const reader = new FileReader();
   reader.onload = e => {
     const html = e.target.result;
@@ -3707,52 +3713,68 @@ function handleImportFile(input) {
 }
 
 function parseImportHTML(html) {
-  // Strategy 1: look for <script id="appState" type="application/json">
+  // ── Strategy 1: extract from localStorage snapshot embedded in HTML ──
+  // Modern backups embed the full S state in appState JSON
   const m1 = html.match(/<script[^>]+id=["']appState["'][^>]*>([\s\S]*?)<\/script>/i);
+  let d = null;
   if (m1) {
-    try {
-      const d = JSON.parse(m1[1].trim());
-      if (d && (d.receitas || d.despesas || d.aplicacoes)) {
-        return {
-          receitas:   Array.isArray(d.receitas)   ? d.receitas   : [],
-          despesas:   Array.isArray(d.despesas)   ? d.despesas   : [],
-          aplicacoes: Array.isArray(d.aplicacoes) ? d.aplicacoes : [],
-          source: 'appState'
-        };
-      }
-    } catch(e) {}
+    try { d = JSON.parse(m1[1].trim()); } catch(e) {}
   }
 
-  // Strategy 2: look for any JSON blob that looks like our data (older versions might inline it)
-  const m2 = html.match(/\{[\s\S]*?"receitas"\s*:\s*\[[\s\S]*?\}/);
-  if (m2) {
-    try {
-      // Try to extract a clean JSON from the match
-      const candidates = html.matchAll(/\{[^{}]*"receitas"\s*:\s*\[[\s\S]*?"despesas"\s*:\s*\[[\s\S]*?\}/g);
-      for (const c of candidates) {
-        try {
-          const d = JSON.parse(c[0]);
-          if (d.receitas || d.despesas) return {
-            receitas:   Array.isArray(d.receitas)   ? d.receitas   : [],
-            despesas:   Array.isArray(d.despesas)   ? d.despesas   : [],
-            aplicacoes: Array.isArray(d.aplicacoes) ? d.aplicacoes : [],
-            source: 'inline'
-          };
-        } catch(e) {}
-      }
-    } catch(e) {}
+  // ── Strategy 2: look for localStorage snapshot in script tags ──
+  if (!d) {
+    // Some older exports stringify S inside a script tag directly
+    const m2 = html.match(/localStorage\.setItem\(['"]fluxocaixa_data['"],\s*JSON\.stringify\((\{[\s\S]*?\})\)\)/);
+    if (m2) { try { d = JSON.parse(m2[1]); } catch(e) {} }
   }
 
-  // Strategy 3: extract individual arrays
-  const tryArr = (key) => {
+  // ── Strategy 3: scan all <script> tags for a JSON object with our keys ──
+  if (!d) {
+    const scriptMatches = [...html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/gi)];
+    for (const sm of scriptMatches) {
+      // look for JSON.parse of our data pattern
+      const inner = sm[1];
+      const jsonMatch = inner.match(/[`'"](\{[^`'"]{20,}?"receitas"\s*:\s*\[[\s\S]*?\})[`'"]/);
+      if (jsonMatch) { try { d = JSON.parse(jsonMatch[1]); if (d.receitas) break; } catch(e) {} }
+    }
+  }
+
+  // ── Strategy 4: regex extract individual arrays (legacy) ──
+  function tryArr(key) {
     const rx = new RegExp(`"${key}"\\s*:\\s*(\\[[\\s\\S]*?\\])(?=\\s*[,}])`, 'i');
     const m = html.match(rx);
     if (m) { try { return JSON.parse(m[1]); } catch(e) {} }
     return [];
-  };
+  }
+
+  function tryCats(html) {
+    // cats is an object, not an array
+    const rx = /"cats"\s*:\s*(\{[\s\S]*?\})(?=\s*[,}])/i;
+    const m = html.match(rx);
+    if (m) { try { const v = JSON.parse(m[1]); if (typeof v==='object'&&v!==null) return v; } catch(e) {} }
+    return null;
+  }
+
+  if (d && typeof d === 'object') {
+    // normalize — pick up everything we know about
+    return {
+      receitas:   Array.isArray(d.receitas)   ? d.receitas   : tryArr('receitas'),
+      despesas:   Array.isArray(d.despesas)   ? d.despesas   : tryArr('despesas'),
+      aplicacoes: Array.isArray(d.aplicacoes) ? d.aplicacoes : tryArr('aplicacoes'),
+      acoes:      Array.isArray(d.acoes)      ? d.acoes      : tryArr('acoes'),
+      realizado:  Array.isArray(d.realizado)  ? d.realizado  : tryArr('realizado'),
+      ccs:        Array.isArray(d.ccs)        ? d.ccs        : tryArr('ccs'),
+      cats:       (d.cats && typeof d.cats === 'object') ? d.cats : tryCats(html),
+      source: 'full'
+    };
+  }
+
+  // last resort: extract individual arrays
   const rec = tryArr('receitas'), des = tryArr('despesas'), apl = tryArr('aplicacoes');
-  if (rec.length || des.length || apl.length) {
-    return { receitas: rec, despesas: des, aplicacoes: apl, source: 'arrays' };
+  const aco = tryArr('acoes'), real = tryArr('realizado'), ccs = tryArr('ccs');
+  const cats = tryCats(html);
+  if (rec.length || des.length || apl.length || aco.length || real.length || ccs.length || cats) {
+    return { receitas:rec, despesas:des, aplicacoes:apl, acoes:aco, realizado:real, ccs:ccs, cats, source:'arrays' };
   }
 
   return null;
@@ -3763,7 +3785,12 @@ function showImportModal(fileName, data) {
   document.getElementById('importFileInfo').style.display = 'block';
   document.getElementById('importFileName').textContent = fileName;
 
-  if (!data || (!data.receitas.length && !data.despesas.length && !data.aplicacoes.length)) {
+  const hasAny = data && (
+    data.receitas?.length || data.despesas?.length || data.aplicacoes?.length ||
+    data.acoes?.length || data.realizado?.length || data.ccs?.length || data.cats
+  );
+
+  if (!hasAny) {
     document.getElementById('importFileSummary').textContent = 'Nenhum dado identificado';
     document.getElementById('importSections').style.display = 'none';
     document.getElementById('importNoData').style.display = 'block';
@@ -3775,24 +3802,49 @@ function showImportModal(fileName, data) {
   document.getElementById('importSections').style.display = 'block';
   document.getElementById('btnDoImport').style.display = 'inline-flex';
 
-  const r = data.receitas.length, d = data.despesas.length, a = data.aplicacoes.length;
-  document.getElementById('importFileSummary').textContent =
-    `${r} receita${r!==1?'s':''} · ${d} despesa${d!==1?'s':''} · ${a} aplicaç${a!==1?'ões':'ão'} encontrada${r+d+a!==1?'s':''}`;
+  const r   = data.receitas?.length   || 0;
+  const d   = data.despesas?.length   || 0;
+  const a   = data.aplicacoes?.length || 0;
+  const b3  = data.acoes?.length      || 0;
+  const rl  = data.realizado?.length  || 0;
+  const cc  = data.ccs?.length        || 0;
+  const cat = data.cats ? Object.keys(data.cats).length : 0;
 
-  setText('lblRec', `${r} registro${r!==1?'s':''} no arquivo`);
-  setText('lblDes', `${d} registro${d!==1?'s':''} no arquivo`);
-  setText('lblApl', `${a} registro${a!==1?'s':''} no arquivo`);
+  // Summary
+  const parts = [];
+  if (r)   parts.push(`${r} receita${r!==1?'s':''}`);
+  if (d)   parts.push(`${d} despesa${d!==1?'s':''}`);
+  if (a)   parts.push(`${a} aplicaç${a!==1?'ões':'ão'}`);
+  if (b3)  parts.push(`${b3} operaç${b3!==1?'ões':'ão'} B3`);
+  if (rl)  parts.push(`${rl} realizad${rl!==1?'os':'o'}`);
+  if (cc)  parts.push(`${cc} CC${cc!==1?'s':''}`);
+  if (cat) parts.push(`${cat} categoria${cat!==1?'s':''}`);
+  document.getElementById('importFileSummary').textContent = parts.join(' · ') || 'Arquivo vazio';
 
-  // hide sections with 0 items
-  document.getElementById('importOptRec').style.opacity = r ? '1' : '.4';
-  document.getElementById('importOptDes').style.opacity = d ? '1' : '.4';
-  document.getElementById('importOptApl').style.opacity = a ? '1' : '.4';
-  document.getElementById('chkRec').disabled = !r;
-  document.getElementById('chkDes').disabled = !d;
-  document.getElementById('chkApl').disabled = !a;
+  const setText = (id, txt) => { const el=document.getElementById(id); if(el) el.textContent=txt; };
+  const setOpt  = (optId, chkId, count) => {
+    document.getElementById(optId).style.opacity = count ? '1' : '.4';
+    document.getElementById(chkId).disabled = !count;
+    if (!count) document.getElementById(chkId).checked = false;
+  };
+
+  setText('lblRec',  `${r} no arquivo`);
+  setText('lblDes',  `${d} no arquivo`);
+  setText('lblApl',  `${a} no arquivo`);
+  setText('lblB3',   `${b3} no arquivo`);
+  setText('lblReal', `${rl} no arquivo`);
+  setText('lblCCs',  `${cc} no arquivo`);
+  setText('lblCats', `${cat} categorias no arquivo`);
+
+  setOpt('importOptRec',  'chkRec',  r);
+  setOpt('importOptDes',  'chkDes',  d);
+  setOpt('importOptApl',  'chkApl',  a);
+  setOpt('importOptB3',   'chkB3',   b3);
+  setOpt('importOptReal', 'chkReal', rl);
+  setOpt('importOptCCs',  'chkCCs',  cc);
+  setOpt('importOptCats', 'chkCats', cat);
 
   updateImportPreview();
-  // live update preview when checkboxes/radio change
   document.querySelectorAll('#importOpts input, input[name="conflito"]').forEach(el => {
     el.onchange = updateImportPreview;
   });
@@ -3802,10 +3854,11 @@ function getConflito() {
   return document.querySelector('input[name="conflito"]:checked')?.value || 'skip';
 }
 
-// Returns true if two records "match" (same logical entry)
 function recMatch(a, b) {
+  if (a.id && b.id && a.id === b.id) return true;
   if (a.desc && b.desc && a.desc.trim() === b.desc.trim()) {
     if (a.inicio && b.inicio && a.inicio === b.inicio) return true;
+    if (a.data && b.data && a.data === b.data) return true;
     if (a.tipo && b.tipo && a.tipo === b.tipo && !a.inicio && !b.inicio) return true;
   }
   return false;
@@ -3814,83 +3867,147 @@ function recMatch(a, b) {
 function computeImport() {
   if (!_importData) return null;
   const conflito = getConflito();
-  const chkRec = document.getElementById('chkRec').checked;
-  const chkDes = document.getElementById('chkDes').checked;
-  const chkApl = document.getElementById('chkApl').checked;
+  const chk = (id) => { const el=document.getElementById(id); return el && !el.disabled && el.checked; };
 
-  const result = { rec: {added:0,updated:0,skipped:0}, des: {added:0,updated:0,skipped:0}, apl: {added:0,updated:0,skipped:0} };
+  const stats = {
+    rec:{added:0,updated:0,skipped:0}, des:{added:0,updated:0,skipped:0},
+    apl:{added:0,updated:0,skipped:0}, b3:{added:0,updated:0,skipped:0},
+    real:{added:0,updated:0,skipped:0}, ccs:{added:0,updated:0,skipped:0},
+    cats:{added:0,updated:0,skipped:0}
+  };
 
-  function mergeList(srcList, curList, stats) {
+  function mergeList(srcList, curList, st) {
+    if (!srcList?.length) return curList;
     const out = [...curList];
     for (const item of srcList) {
       const existIdx = out.findIndex(x => recMatch(x, item));
       if (existIdx === -1) {
-        out.push({...item, id: uid()});
-        stats.added++;
+        out.push({...item, id: item.id || uid()});
+        st.added++;
       } else if (conflito === 'overwrite') {
         out[existIdx] = {...item, id: out[existIdx].id};
-        stats.updated++;
+        st.updated++;
       } else if (conflito === 'duplicate') {
         out.push({...item, id: uid()});
-        stats.added++;
+        st.added++;
       } else {
-        stats.skipped++;
+        st.skipped++;
       }
     }
     return out;
   }
 
-  const newRec = chkRec ? mergeList(_importData.receitas,   S.receitas,   result.rec) : S.receitas;
-  const newDes = chkDes ? mergeList(_importData.despesas,   S.despesas,   result.des) : S.despesas;
-  const newApl = chkApl ? mergeList(_importData.aplicacoes, S.aplicacoes, result.apl) : S.aplicacoes;
+  function mergeCCs(srcCCs, curCCs, st) {
+    if (!srcCCs?.length) return curCCs;
+    const out = [...curCCs];
+    for (const cc of srcCCs) {
+      const existIdx = out.findIndex(x => x.id === cc.id || x.nome === cc.nome);
+      if (existIdx === -1) {
+        out.push({...cc, id: cc.id || uid()});
+        st.added++;
+      } else if (conflito === 'overwrite') {
+        out[existIdx] = {...cc, id: out[existIdx].id};
+        st.updated++;
+      } else {
+        st.skipped++;
+      }
+    }
+    return out;
+  }
 
-  return { newRec, newDes, newApl, result };
+  function mergeCats(srcCats, st) {
+    if (!srcCats || typeof srcCats !== 'object') return null;
+    const out = {...CATS};
+    for (const [k, v] of Object.entries(srcCats)) {
+      if (!out[k]) {
+        out[k] = v;
+        st.added++;
+      } else if (conflito === 'overwrite') {
+        out[k] = v;
+        st.updated++;
+      } else {
+        st.skipped++;
+      }
+    }
+    return out;
+  }
+
+  const newRec  = chk('chkRec')  ? mergeList(_importData.receitas,   S.receitas,   stats.rec)  : S.receitas;
+  const newDes  = chk('chkDes')  ? mergeList(_importData.despesas,   S.despesas,   stats.des)  : S.despesas;
+  const newApl  = chk('chkApl')  ? mergeList(_importData.aplicacoes, S.aplicacoes, stats.apl)  : S.aplicacoes;
+  const newB3   = chk('chkB3')   ? mergeList(_importData.acoes,      S.acoes,      stats.b3)   : S.acoes;
+  const newReal = chk('chkReal') ? mergeList(_importData.realizado,  S.realizado,  stats.real) : S.realizado;
+  const newCCs  = chk('chkCCs')  ? mergeCCs (_importData.ccs,        S.ccs||[],    stats.ccs)  : (S.ccs||[]);
+  const newCats = chk('chkCats') ? mergeCats(_importData.cats,       stats.cats)               : null;
+
+  return { newRec, newDes, newApl, newB3, newReal, newCCs, newCats, stats };
 }
 
 function updateImportPreview() {
   const el = document.getElementById('importPreview');
   const computed = computeImport();
   if (!computed) { el.style.display='none'; return; }
-  const {result} = computed;
-  const lines = [];
-  const fmt2 = (s,lbl) => {
+  const {stats} = computed;
+
+  function fmtStat(s, label) {
     const parts = [];
     if (s.added)   parts.push(`<span style="color:var(--green)">+${s.added} novos</span>`);
     if (s.updated) parts.push(`<span style="color:var(--gold)">${s.updated} atualizados</span>`);
     if (s.skipped) parts.push(`<span style="color:var(--text3)">${s.skipped} ignorados</span>`);
     if (!parts.length) parts.push(`<span style="color:var(--text3)">sem alterações</span>`);
-    return `<div style="display:flex;justify-content:space-between;"><span>${lbl}</span><span>${parts.join(' · ')}</span></div>`;
-  };
-  lines.push(fmt2(result.rec, '📈 Receitas'));
-  lines.push(fmt2(result.des, '💸 Despesas'));
-  lines.push(fmt2(result.apl, '🏦 Aplicações'));
-  el.innerHTML = lines.join('');
+    return `<div style="display:flex;justify-content:space-between;gap:8px;"><span>${label}</span><span>${parts.join(' · ')}</span></div>`;
+  }
+
+  const chk = (id) => { const el=document.getElementById(id); return el && !el.disabled && el.checked; };
+  const lines = [];
+  if (chk('chkRec'))  lines.push(fmtStat(stats.rec,  '📈 Receitas'));
+  if (chk('chkDes'))  lines.push(fmtStat(stats.des,  '💸 Despesas'));
+  if (chk('chkApl'))  lines.push(fmtStat(stats.apl,  '🏦 Aplicações'));
+  if (chk('chkB3'))   lines.push(fmtStat(stats.b3,   '📊 B3'));
+  if (chk('chkReal')) lines.push(fmtStat(stats.real, '✅ Realizados'));
+  if (chk('chkCCs'))  lines.push(fmtStat(stats.ccs,  '🏢 Centros de Custo'));
+  if (chk('chkCats')) lines.push(fmtStat(stats.cats, '🏷️ Categorias'));
+
+  el.innerHTML = lines.join('') || '<span style="color:var(--text3)">Nada selecionado</span>';
   el.style.display = 'block';
 }
 
 function doImport() {
   const computed = computeImport();
   if (!computed) return;
-  const {newRec, newDes, newApl, result} = computed;
+  const {newRec, newDes, newApl, newB3, newReal, newCCs, newCats, stats} = computed;
+
   S.receitas   = newRec;
   S.despesas   = newDes;
   S.aplicacoes = newApl;
+  S.acoes      = newB3;
+  S.realizado  = newReal;
+  S.ccs        = newCCs;
+
+  // Apply cats if selected — update CATS global and persist in S.cats
+  if (newCats) {
+    CATS = newCats;
+    S.cats = newCats;
+  }
+
   persist();
   refreshAll();
+  buildCCFilter();
   closeImportModal();
-  const total = result.rec.added + result.des.added + result.apl.added +
-                result.rec.updated + result.des.updated + result.apl.updated;
+
+  const total = Object.values(stats).reduce((sum, s) => sum + s.added + s.updated, 0);
   toast(`✓ Importação concluída — ${total} registro${total!==1?'s':''} processado${total!==1?'s':''}`);
 }
 
 function closeImportModal() {
   document.getElementById('importModal').classList.remove('open');
   _importData = null;
-  document.getElementById('importPreview').style.display = 'none';
-  document.getElementById('importSections').style.display = 'none';
-  document.getElementById('importFileInfo').style.display = 'none';
-  document.getElementById('importNoData').style.display = 'none';
-  document.getElementById('btnDoImport').style.display = 'none';
+  ['importPreview','importSections','importFileInfo','importNoData'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  const btn = document.getElementById('btnDoImport');
+  if (btn) btn.style.display = 'none';
 }
 
 // ── B3 CARTEIRA ───────────────────────────────────────────────────────────
